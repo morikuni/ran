@@ -1,0 +1,5 @@
+tasks:
+- name: "echo task"
+  cmd: echo "hello"
+- name: "pipe task"
+  cmd: echo "world" | cat
