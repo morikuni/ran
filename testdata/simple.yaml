@@ -1,5 +1,5 @@
 tasks:
-- name: "echo task"
-  cmd: echo "hello"
-- name: "pipe task"
-  cmd: echo "world" | cat
+  echo:
+    cmd: echo "hello"
+  pipe:
+    cmd: echo "world" | cat

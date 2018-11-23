@@ -1,4 +1,4 @@
 tasks:
-- name: run go test
-  cmd: GO111MODULE=on go test -v ./...
+  test:
+    cmd: GO111MODULE=on go test -v ./...
 

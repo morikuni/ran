@@ -1,28 +1,27 @@
 package workflow_test
 
 import (
-	"github.com/morikuni/workflow"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/morikuni/workflow"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseDefinition(t *testing.T) {
 	r := strings.NewReader(`
 tasks:
-- name: aaa
-  cmd: bbb
-- name: ccc
-  cmd: ddd
+  aaa:
+    cmd: bbb
+  ccc:
+    cmd: ddd
 `)
 	want := workflow.Definition{
-		Tasks: []workflow.Task{
-			{
-				Name: "aaa",
+		Tasks: map[string]workflow.Task{
+			"aaa": {
 				CMD: "bbb",
 			},
-			{
-				Name: "ccc",
+			"ccc": {
 				CMD: "ddd",
 			},
 		},
@@ -35,13 +34,11 @@ tasks:
 
 func TestLoadDefinition(t *testing.T) {
 	want := workflow.Definition{
-		Tasks: []workflow.Task{
-			{
-				Name: "echo task",
+		Tasks: map[string]workflow.Task{
+			"echo": {
 				CMD: `echo "hello"`,
 			},
-			{
-				Name: "pipe task",
+			"pipe": {
 				CMD: `echo "world" | cat`,
 			},
 		},

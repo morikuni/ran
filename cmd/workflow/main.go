@@ -19,8 +19,8 @@ func app() (exitCode int) {
 		return 1
 	}
 
-	for _, task := range def.Tasks {
-		fmt.Println("[" + task.Name + "]")
+	for name, task := range def.Tasks {
+		fmt.Println("[" + name + "]")
 		tr := workflow.NewTaskRunner()
 		if err := tr.Run(task); err != nil {
 			log.Println(err)

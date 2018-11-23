@@ -9,12 +9,11 @@ import (
 )
 
 type Definition struct {
-	Tasks []Task `yaml:"tasks"`
+	Tasks map[string]Task `yaml:"tasks"`
 }
 
 type Task struct {
-	Name string `yaml:"name"`
-	CMD  string `yaml:"cmd"`
+	CMD string `yaml:"cmd"`
 }
 
 func LoadDefinition(filename string) (Definition, error) {
@@ -30,9 +29,11 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 	if err != nil {
 		return Definition{}, err
 	}
+
 	var def Definition
 	if err := yaml.Unmarshal(bs, &def); err != nil {
 		return Definition{}, err
 	}
+
 	return def, nil
 }
