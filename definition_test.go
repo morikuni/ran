@@ -19,10 +19,12 @@ tasks:
 	want := workflow.Definition{
 		Tasks: map[string]workflow.Task{
 			"aaa": {
-				CMD: "bbb",
+				Name: "aaa",
+				CMD:  "bbb",
 			},
 			"ccc": {
-				CMD: "ddd",
+				Name: "ccc",
+				CMD:  "ddd",
 			},
 		},
 	}
@@ -36,10 +38,12 @@ func TestLoadDefinition(t *testing.T) {
 	want := workflow.Definition{
 		Tasks: map[string]workflow.Task{
 			"echo": {
-				CMD: `echo "hello"`,
+				Name: "echo",
+				CMD:  `echo "hello"`,
 			},
 			"pipe": {
-				CMD: `echo "world" | cat`,
+				Name: "pipe",
+				CMD:  `echo "world" | cat`,
 			},
 		},
 	}
