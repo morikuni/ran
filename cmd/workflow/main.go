@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -13,14 +14,31 @@ func main() {
 }
 
 func app() (exitCode int) {
-	def, err := workflow.LoadDefinition(os.Args[1])
+	file := flag.String("f", "workflow.yaml", "file")
+	flag.Parse()
+
+	def, err := workflow.LoadDefinition(*file)
 	if err != nil {
 		log.Println(err)
 		return 1
 	}
 
-	for name, task := range def.Tasks {
-		fmt.Println("[" + name + "]")
+	target := flag.Arg(0)
+	stages, ok := def.Workflow[target]
+	if !ok {
+		log.Println("no such workflow:", target)
+		return 1
+	}
+
+	for _, stage := range stages {
+		fmt.Println("[" + stage.Run + "]")
+
+		task, ok := def.Tasks[stage.Run]
+		if !ok {
+			log.Println("no such task:", stage.Run)
+			return 1
+		}
+
 		tr := workflow.NewTaskRunner()
 		if err := tr.Run(task); err != nil {
 			log.Println(err)

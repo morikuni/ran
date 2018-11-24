@@ -3,3 +3,8 @@ tasks:
     cmd: echo "hello"
   pipe:
     cmd: echo "world" | cat
+
+workflow:
+  all:
+  - run: echo
+  - run: pipe

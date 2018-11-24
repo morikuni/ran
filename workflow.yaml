@@ -2,3 +2,14 @@ tasks:
   test:
     cmd: GO111MODULE=on go test -v ./...
 
+  build:
+    cmd: GO111MODULE=on go build -o bin/workflow cmd/workflow/main.go
+
+workflow:
+  test:
+  - run: test
+
+  build:
+  - run: test
+
+  - run: build
