@@ -42,6 +42,7 @@ func app() (exitCode int) {
 		tr := workflow.NewTaskRunner()
 		if err := tr.Run(task); err != nil {
 			log.Println(err)
+			fmt.Print(tr.Output())
 			return 1
 		}
 		fmt.Print(tr.Output())
