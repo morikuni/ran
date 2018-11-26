@@ -1,3 +1,7 @@
+env:
+  ENV_X: 123
+  ENV_Y: hello
+
 tasks:
   echo:
     cmd: echo "hello"

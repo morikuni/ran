@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -11,6 +12,7 @@ import (
 type Definition struct {
 	Tasks    map[string]Task
 	Workflow map[string][]Stage
+	Env      Env
 }
 
 type Task struct {
@@ -21,6 +23,8 @@ type Task struct {
 type Stage struct {
 	Run string
 }
+
+type Env []string
 
 func LoadDefinition(filename string) (Definition, error) {
 	file, err := os.Open(filename)
@@ -43,6 +47,7 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 		Workflow map[string][]struct {
 			Run string `yaml:"run"`
 		} `yaml:"workflow"`
+		Env map[string]string `yaml:"env"`
 	}
 	if err := yaml.Unmarshal(bs, &raw); err != nil {
 		return Definition{}, err
@@ -51,6 +56,7 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 	def := Definition{
 		make(map[string]Task, len(raw.Tasks)),
 		make(map[string][]Stage, len(raw.Workflow)),
+		os.Environ(),
 	}
 	for name, t := range raw.Tasks {
 		def.Tasks[name] = Task{
@@ -66,6 +72,9 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 			}
 		}
 		def.Workflow[name] = stages
+	}
+	for k, v := range raw.Env {
+		def.Env = append(def.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 
 	return def, nil

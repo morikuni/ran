@@ -1,9 +1,12 @@
+env:
+  GO111MODULE: on
+
 tasks:
   test:
-    cmd: GO111MODULE=on go test -v ./...
+    cmd: go test -v ./...
 
   build:
-    cmd: GO111MODULE=on go build -o bin/workflow cmd/workflow/main.go
+    cmd: go build -o bin/workflow cmd/workflow/main.go
 
 workflow:
   test:

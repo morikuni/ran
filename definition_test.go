@@ -10,6 +10,10 @@ import (
 
 func TestParseDefinition(t *testing.T) {
 	r := strings.NewReader(`
+env:
+  FOO: 123
+  HELLO: world
+
 tasks:
   aaa:
     cmd: bbb
@@ -45,8 +49,12 @@ workflow:
 	}
 
 	def, err := workflow.ParseDefinition(r)
+	env := def.Env
+	def.Env = nil
 	assert.NoError(t, err)
 	assert.Equal(t, want, def)
+	assert.Contains(t, env, "FOO=123")
+	assert.Contains(t, env, "HELLO=world")
 }
 
 func TestLoadDefinition(t *testing.T) {
@@ -74,6 +82,10 @@ func TestLoadDefinition(t *testing.T) {
 	}
 
 	def, err := workflow.LoadDefinition("testdata/simple.yaml")
+	env := def.Env
+	def.Env = nil
 	assert.NoError(t, err)
 	assert.Equal(t, want, def)
+	assert.Contains(t, env, "ENV_X=123")
+	assert.Contains(t, env, "ENV_Y=hello")
 }

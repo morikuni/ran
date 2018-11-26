@@ -9,12 +9,14 @@ import (
 
 func TestTaskRunner(t *testing.T) {
 	cases := map[string]struct {
+		env  workflow.Env
 		task workflow.Task
 
 		wantOutput string
 		wantErr    bool
 	}{
 		"simple": {
+			nil,
 			workflow.Task{
 				CMD: `echo "hello world"`,
 			},
@@ -23,6 +25,7 @@ func TestTaskRunner(t *testing.T) {
 			false,
 		},
 		"pipe": {
+			nil,
 			workflow.Task{
 				CMD: `echo "hello world" | sed -e "s/hello/hi!/g"`,
 			},
@@ -31,6 +34,7 @@ func TestTaskRunner(t *testing.T) {
 			false,
 		},
 		"command substitution backquote": {
+			nil,
 			workflow.Task{
 				CMD: "echo `echo backquote`",
 			},
@@ -39,6 +43,7 @@ func TestTaskRunner(t *testing.T) {
 			false,
 		},
 		"command substitution dollar": {
+			nil,
 			workflow.Task{
 				CMD: "echo $(echo dollar)",
 			},
@@ -47,6 +52,7 @@ func TestTaskRunner(t *testing.T) {
 			false,
 		},
 		"process substitution": {
+			nil,
 			workflow.Task{
 				CMD: "cat <(echo process)",
 			},
@@ -55,6 +61,7 @@ func TestTaskRunner(t *testing.T) {
 			false,
 		},
 		"error": {
+			nil,
 			workflow.Task{
 				CMD: "cat nofile",
 			},
@@ -62,11 +69,20 @@ func TestTaskRunner(t *testing.T) {
 			"cat: nofile: No such file or directory\n",
 			true,
 		},
+		"env": {
+			workflow.Env{"HELLO=world"},
+			workflow.Task{
+				CMD: "echo $HELLO",
+			},
+
+			"world\n",
+			false,
+		},
 	}
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			tr := workflow.NewTaskRunner()
+			tr := workflow.NewTaskRunner(tc.env)
 			err := tr.Run(tc.task)
 			if tc.wantErr {
 				assert.Error(t, err)
