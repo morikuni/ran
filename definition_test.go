@@ -20,10 +20,11 @@ tasks:
   ccc:
     cmd: ddd
 
-workflow:
+commands:
   test:
-  - run: aaa
-  - run: ccc
+    workflow:
+    - run: aaa
+    - run: ccc
 `)
 	want := workflow.Definition{
 		Tasks: map[string]workflow.Task{
@@ -36,13 +37,16 @@ workflow:
 				CMD:  "ddd",
 			},
 		},
-		Workflow: map[string][]workflow.Stage{
+		Commands: map[string]workflow.Command{
 			"test": {
-				{
-					Run: "aaa",
-				},
-				{
-					Run: "ccc",
+				Name: "test",
+				Workflow: []workflow.Work{
+					{
+						Run: "aaa",
+					},
+					{
+						Run: "ccc",
+					},
 				},
 			},
 		},
@@ -69,13 +73,16 @@ func TestLoadDefinition(t *testing.T) {
 				CMD:  `echo "world" | cat`,
 			},
 		},
-		Workflow: map[string][]workflow.Stage{
+		Commands: map[string]workflow.Command{
 			"all": {
-				{
-					Run: "echo",
-				},
-				{
-					Run: "pipe",
+				Name: "all",
+				Workflow: []workflow.Work{
+					{
+						Run: "echo",
+					},
+					{
+						Run: "pipe",
+					},
 				},
 			},
 		},

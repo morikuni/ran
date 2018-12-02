@@ -8,7 +8,8 @@ tasks:
   pipe:
     cmd: echo "world" | cat
 
-workflow:
+commands:
   all:
-  - run: echo
-  - run: pipe
+    workflow:
+    - run: echo
+    - run: pipe

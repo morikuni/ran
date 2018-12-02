@@ -8,11 +8,15 @@ tasks:
   build:
     cmd: go build -o bin/workflow cmd/workflow/main.go
 
-workflow:
+commands:
   test:
-  - run: test
+    worlflow:
+    - run: test
 
   build:
-  - run: test
+    workflow:
+    - run: test
 
-  - run: build
+    - run: build
+      when:
+      - test.succeeded

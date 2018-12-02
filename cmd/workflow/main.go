@@ -24,18 +24,18 @@ func app() (exitCode int) {
 	}
 
 	target := flag.Arg(0)
-	stages, ok := def.Workflow[target]
+	command, ok := def.Commands[target]
 	if !ok {
 		log.Println("no such workflow:", target)
 		return 1
 	}
 
-	for _, stage := range stages {
-		fmt.Println("[" + stage.Run + "]")
+	for _, work := range command.Workflow {
+		fmt.Println("[" + work.Run + "]")
 
-		task, ok := def.Tasks[stage.Run]
+		task, ok := def.Tasks[work.Run]
 		if !ok {
-			log.Println("no such task:", stage.Run)
+			log.Println("no such task:", work.Run)
 			return 1
 		}
 

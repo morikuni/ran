@@ -10,9 +10,9 @@ import (
 )
 
 type Definition struct {
-	Tasks    map[string]Task
-	Workflow map[string][]Stage
 	Env      Env
+	Tasks    map[string]Task
+	Commands map[string]Command
 }
 
 type Task struct {
@@ -20,7 +20,12 @@ type Task struct {
 	CMD  string
 }
 
-type Stage struct {
+type Command struct {
+	Name     string
+	Workflow []Work
+}
+
+type Work struct {
 	Run string
 }
 
@@ -41,37 +46,43 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 	}
 
 	var raw struct {
+		Env   map[string]string `yaml:"env"`
 		Tasks map[string]struct {
 			CMD string `yaml:"cmd"`
 		} `yaml:"tasks"`
-		Workflow map[string][]struct {
-			Run string `yaml:"run"`
-		} `yaml:"workflow"`
-		Env map[string]string `yaml:"env"`
+		Commands map[string]struct {
+			Workflow []struct {
+				Run string `yaml:"run"`
+			} `yaml:"workflow"`
+		} `yaml:"commands"`
 	}
 	if err := yaml.Unmarshal(bs, &raw); err != nil {
 		return Definition{}, err
 	}
 
 	def := Definition{
-		make(map[string]Task, len(raw.Tasks)),
-		make(map[string][]Stage, len(raw.Workflow)),
 		os.Environ(),
+		make(map[string]Task, len(raw.Tasks)),
+		make(map[string]Command, len(raw.Commands)),
 	}
+
 	for name, t := range raw.Tasks {
 		def.Tasks[name] = Task{
 			name,
 			t.CMD,
 		}
 	}
-	for name, ss := range raw.Workflow {
-		stages := make([]Stage, len(ss))
-		for i, s := range ss {
-			stages[i] = Stage{
+	for name, c := range raw.Commands {
+		works := make([]Work, len(c.Workflow))
+		for i, s := range c.Workflow {
+			works[i] = Work{
 				s.Run,
 			}
 		}
-		def.Workflow[name] = stages
+		def.Commands[name] = Command{
+			name,
+			works,
+		}
 	}
 	for k, v := range raw.Env {
 		def.Env = append(def.Env, fmt.Sprintf("%s=%s", k, v))
