@@ -1,10 +1,10 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"log"
+	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/morikuni/workflow"
 )
@@ -14,39 +14,17 @@ func main() {
 }
 
 func app() (exitCode int) {
-	file := flag.String("f", "workflow.yaml", "file")
-	flag.Parse()
+	logger := workflow.NewStdLogger(os.Stdout)
+	app := workflow.NewApp(logger)
 
-	def, err := workflow.LoadDefinition(*file)
+	sig := make(chan os.Signal)
+	signal.Notify(sig, syscall.SIGTERM)
+
+	err := app.Run(context.Background(), os.Args, sig)
 	if err != nil {
-		log.Println(err)
+		logger.Error(err.Error())
 		return 1
 	}
 
-	target := flag.Arg(0)
-	command, ok := def.Commands[target]
-	if !ok {
-		log.Println("no such workflow:", target)
-		return 1
-	}
-
-	for _, work := range command.Workflow {
-		fmt.Println("[" + work.Run + "]")
-
-		task, ok := def.Tasks[work.Run]
-		if !ok {
-			log.Println("no such task:", work.Run)
-			return 1
-		}
-
-		tr := workflow.NewTaskRunner(def.Env)
-		if err := tr.Run(task); err != nil {
-			log.Println(err)
-			fmt.Print(tr.Output())
-			return 1
-		}
-		fmt.Print(tr.Output())
-	}
-
-	return
+	return 0
 }

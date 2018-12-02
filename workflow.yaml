@@ -10,7 +10,7 @@ tasks:
 
 commands:
   test:
-    worlflow:
+    workflow:
     - run: test
 
   build:
