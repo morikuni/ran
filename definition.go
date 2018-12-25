@@ -6,27 +6,22 @@ import (
 	"io/ioutil"
 	"os"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type Definition struct {
 	Env      Env
-	Tasks    map[string]Task
 	Commands map[string]Command
-}
-
-type Task struct {
-	Name string
-	CMD  string
 }
 
 type Command struct {
 	Name     string
-	Workflow []Work
+	Workflow []Task
 }
 
-type Work struct {
-	Run string
+type Task struct {
+	Cmd  string
+	When []string
 }
 
 type Env []string
@@ -46,13 +41,11 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 	}
 
 	var raw struct {
-		Env   map[string]string `yaml:"env"`
-		Tasks map[string]struct {
-			CMD string `yaml:"cmd"`
-		} `yaml:"tasks"`
+		Env      map[string]string `yaml:"env"`
 		Commands map[string]struct {
 			Workflow []struct {
-				Run string `yaml:"run"`
+				Cmd  string   `yaml:"cmd"`
+				When []string `yaml:"when"`
 			} `yaml:"workflow"`
 		} `yaml:"commands"`
 	}
@@ -62,26 +55,20 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 
 	def := Definition{
 		os.Environ(),
-		make(map[string]Task, len(raw.Tasks)),
 		make(map[string]Command, len(raw.Commands)),
 	}
 
-	for name, t := range raw.Tasks {
-		def.Tasks[name] = Task{
-			name,
-			t.CMD,
-		}
-	}
 	for name, c := range raw.Commands {
-		works := make([]Work, len(c.Workflow))
+		workflow := make([]Task, len(c.Workflow))
 		for i, s := range c.Workflow {
-			works[i] = Work{
-				s.Run,
+			workflow[i] = Task{
+				s.Cmd,
+				s.When,
 			}
 		}
 		def.Commands[name] = Command{
 			name,
-			works,
+			workflow,
 		}
 	}
 	for k, v := range raw.Env {

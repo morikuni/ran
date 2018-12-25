@@ -1,22 +1,19 @@
 env:
   GO111MODULE: on
 
-tasks:
-  test:
-    cmd: go test -v ./...
-
-  build:
-    cmd: go build -o bin/workflow cmd/workflow/main.go
+vars:
+  test: &test go test -v ./...
+  build: &build go build -o bin/workflow cmd/workflow/main.go
 
 commands:
   test:
     workflow:
-    - run: test
+    - cmd: *test
 
   build:
     workflow:
-    - run: test
+    - cmd: *test
 
-    - run: build
+    - cmd: *build
       when:
       - test.succeeded

@@ -2,14 +2,11 @@ env:
   ENV_X: 123
   ENV_Y: hello
 
-tasks:
-  echo:
-    cmd: echo "hello"
-  pipe:
-    cmd: echo "world" | cat
+vars:
+  cmd: &pipe echo "world" | cat
 
 commands:
   all:
     workflow:
-    - run: echo
-    - run: pipe
+    - cmd: echo "hello"
+    - cmd: *pipe

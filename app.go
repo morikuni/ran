@@ -34,13 +34,8 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 		return fmt.Errorf("no such workflow: %s", target)
 	}
 
-	for _, work := range command.Workflow {
-		app.logger.Info("[" + work.Run + "]")
-
-		task, ok := def.Tasks[work.Run]
-		if !ok {
-			return fmt.Errorf("no such task: %s", work.Run)
-		}
+	for _, task := range command.Workflow {
+		app.logger.Info("[" + task.Cmd + "]")
 
 		tr := NewTaskRunner(def.Env)
 		if err := tr.Run(task); err != nil {

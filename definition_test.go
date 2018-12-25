@@ -14,38 +14,25 @@ env:
   FOO: 123
   HELLO: world
 
-tasks:
-  aaa:
-    cmd: bbb
-  ccc:
-    cmd: ddd
+vars:
+  cmd: &bbb bbb
 
 commands:
   test:
     workflow:
-    - run: aaa
-    - run: ccc
+    - cmd: aaa
+    - cmd: *bbb
 `)
 	want := workflow.Definition{
-		Tasks: map[string]workflow.Task{
-			"aaa": {
-				Name: "aaa",
-				CMD:  "bbb",
-			},
-			"ccc": {
-				Name: "ccc",
-				CMD:  "ddd",
-			},
-		},
 		Commands: map[string]workflow.Command{
 			"test": {
 				Name: "test",
-				Workflow: []workflow.Work{
+				Workflow: []workflow.Task{
 					{
-						Run: "aaa",
+						Cmd: "aaa",
 					},
 					{
-						Run: "ccc",
+						Cmd: "bbb",
 					},
 				},
 			},
@@ -63,25 +50,15 @@ commands:
 
 func TestLoadDefinition(t *testing.T) {
 	want := workflow.Definition{
-		Tasks: map[string]workflow.Task{
-			"echo": {
-				Name: "echo",
-				CMD:  `echo "hello"`,
-			},
-			"pipe": {
-				Name: "pipe",
-				CMD:  `echo "world" | cat`,
-			},
-		},
 		Commands: map[string]workflow.Command{
 			"all": {
 				Name: "all",
-				Workflow: []workflow.Work{
+				Workflow: []workflow.Task{
 					{
-						Run: "echo",
+						Cmd: `echo "hello"`,
 					},
 					{
-						Run: "pipe",
+						Cmd: `echo "world" | cat`,
 					},
 				},
 			},

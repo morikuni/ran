@@ -21,7 +21,7 @@ func NewTaskRunner(env Env) *TaskRunner {
 }
 
 func (tr *TaskRunner) Run(task Task) error {
-	cmd := exec.Command("bash", "-c", task.CMD)
+	cmd := exec.Command("bash", "-c", task.Cmd)
 	cmd.Env = tr.env
 	cmd.Stdout = tr.output
 	cmd.Stderr = tr.output

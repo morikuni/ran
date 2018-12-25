@@ -18,7 +18,7 @@ func TestTaskRunner(t *testing.T) {
 		"simple": {
 			nil,
 			workflow.Task{
-				CMD: `echo "hello world"`,
+				Cmd: `echo "hello world"`,
 			},
 
 			"hello world\n",
@@ -27,7 +27,7 @@ func TestTaskRunner(t *testing.T) {
 		"pipe": {
 			nil,
 			workflow.Task{
-				CMD: `echo "hello world" | sed -e "s/hello/hi!/g"`,
+				Cmd: `echo "hello world" | sed -e "s/hello/hi!/g"`,
 			},
 
 			"hi! world\n",
@@ -36,7 +36,7 @@ func TestTaskRunner(t *testing.T) {
 		"command substitution backquote": {
 			nil,
 			workflow.Task{
-				CMD: "echo `echo backquote`",
+				Cmd: "echo `echo backquote`",
 			},
 
 			"backquote\n",
@@ -45,7 +45,7 @@ func TestTaskRunner(t *testing.T) {
 		"command substitution dollar": {
 			nil,
 			workflow.Task{
-				CMD: "echo $(echo dollar)",
+				Cmd: "echo $(echo dollar)",
 			},
 
 			"dollar\n",
@@ -54,7 +54,7 @@ func TestTaskRunner(t *testing.T) {
 		"process substitution": {
 			nil,
 			workflow.Task{
-				CMD: "cat <(echo process)",
+				Cmd: "cat <(echo process)",
 			},
 
 			"process\n",
@@ -63,7 +63,7 @@ func TestTaskRunner(t *testing.T) {
 		"error": {
 			nil,
 			workflow.Task{
-				CMD: "cat nofile",
+				Cmd: "cat nofile",
 			},
 
 			"cat: nofile: No such file or directory\n",
@@ -72,7 +72,7 @@ func TestTaskRunner(t *testing.T) {
 		"env": {
 			workflow.Env{"HELLO=world"},
 			workflow.Task{
-				CMD: "echo $HELLO",
+				Cmd: "echo $HELLO",
 			},
 
 			"world\n",
