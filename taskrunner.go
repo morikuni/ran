@@ -12,11 +12,11 @@ import (
 type TaskRunner struct {
 	env      Env
 	task     Task
-	starter  Starter
-	receiver EventHandler
+	starter  WorkerStarter
+	receiver EventReceiver
 }
 
-func NewTaskRunner(task Task, env Env, starter Starter, receiver EventHandler) *TaskRunner {
+func NewTaskRunner(task Task, env Env, starter WorkerStarter, receiver EventReceiver) *TaskRunner {
 	if env == nil {
 		env = Env{}
 	}

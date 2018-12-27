@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-type Starter interface {
+type WorkerStarter interface {
 	Start(ctx context.Context, f func(ctx context.Context) error)
 }
 
@@ -14,7 +14,7 @@ type Supervisor struct {
 }
 
 var _ interface {
-	Starter
+	WorkerStarter
 } = (*Supervisor)(nil)
 
 func NewSupervisor() *Supervisor {
