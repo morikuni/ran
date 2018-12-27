@@ -34,16 +34,14 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 		return fmt.Errorf("no such workflow: %s", target)
 	}
 
+	supervisor := NewSupervisor()
+	dispatcher := NewDispatcher(app.logger)
 	for _, task := range command.Workflow {
-		app.logger.Info("[" + task.Cmd + "]")
+		app.logger.Info(task.Cmd)
 
-		tr := NewTaskRunner(def.Env)
-		if err := tr.Run(task); err != nil {
-			app.logger.Info(tr.Output())
-			return err
-		}
-		app.logger.Info(tr.Output())
+		tr := NewTaskRunner(task, def.Env, supervisor, dispatcher)
+		tr.Run(ctx)
 	}
 
-	return nil
+	return supervisor.Wait()
 }

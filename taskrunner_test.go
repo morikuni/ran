@@ -1,6 +1,7 @@
 package workflow_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/morikuni/workflow"
@@ -8,88 +9,97 @@ import (
 )
 
 func TestTaskRunner(t *testing.T) {
-	cases := map[string]struct {
-		env  workflow.Env
+	cases := []struct {
 		task workflow.Task
+		env  workflow.Env
 
 		wantOutput string
 		wantErr    bool
 	}{
-		"simple": {
-			nil,
+		{
 			workflow.Task{
-				Cmd: `echo "hello world"`,
+				Name: "simple",
+				Cmd:  `echo "hello world"`,
 			},
+			nil,
 
 			"hello world\n",
 			false,
 		},
-		"pipe": {
-			nil,
+		{
 			workflow.Task{
-				Cmd: `echo "hello world" | sed -e "s/hello/hi!/g"`,
+				Name: "pipe",
+				Cmd:  `echo "hello world" | sed -e "s/hello/hi!/g"`,
 			},
+			nil,
 
 			"hi! world\n",
 			false,
 		},
-		"command substitution backquote": {
-			nil,
+		{
 			workflow.Task{
-				Cmd: "echo `echo backquote`",
+				Name: "command substitution backquote",
+				Cmd:  "echo `echo backquote`",
 			},
+			nil,
 
 			"backquote\n",
 			false,
 		},
-		"command substitution dollar": {
-			nil,
+		{
 			workflow.Task{
-				Cmd: "echo $(echo dollar)",
+				Name: "command substitution dollar",
+				Cmd:  "echo $(echo dollar)",
 			},
+			nil,
 
 			"dollar\n",
 			false,
 		},
-		"process substitution": {
-			nil,
+		{
 			workflow.Task{
-				Cmd: "cat <(echo process)",
+				Name: "process substitution",
+				Cmd:  "cat <(echo process)",
 			},
+			nil,
 
 			"process\n",
 			false,
 		},
-		"error": {
-			nil,
+		{
 			workflow.Task{
-				Cmd: "cat nofile",
+				Name: "error",
+				Cmd:  "cat nofile",
 			},
+			nil,
 
 			"cat: nofile: No such file or directory\n",
 			true,
 		},
-		"env": {
-			workflow.Env{"HELLO=world"},
+		{
 			workflow.Task{
-				Cmd: "echo $HELLO",
+				Name: "env",
+				Cmd:  "echo $HELLO",
 			},
+			workflow.Env{"HELLO=world"},
 
 			"world\n",
 			false,
 		},
 	}
 
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			tr := workflow.NewTaskRunner(tc.env)
-			err := tr.Run(tc.task)
+	for _, tc := range cases {
+		t.Run(tc.task.Name, func(t *testing.T) {
+			starter := NewSynchronousStarter()
+			recorder := NewEventRecorder()
+			tr := workflow.NewTaskRunner(tc.task, tc.env, starter, recorder)
+			tr.Run(context.Background())
 			if tc.wantErr {
-				assert.Error(t, err)
+				assert.Equal(t, tc.task.Name+".failed", recorder.GetTopic(0))
 			} else {
-				assert.NoError(t, err)
+				assert.Equal(t, tc.task.Name+".succeeded", recorder.GetTopic(0))
 			}
-			assert.Equal(t, tc.wantOutput, tr.Output())
+			assert.Equal(t, tc.wantOutput, recorder.GetValue(0, "output"))
 		})
 	}
 }

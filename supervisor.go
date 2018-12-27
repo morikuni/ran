@@ -2,26 +2,37 @@ package workflow
 
 import (
 	"context"
-
-	"golang.org/x/sync/errgroup"
+	"sync"
 )
 
+type Starter interface {
+	Start(ctx context.Context, f func(ctx context.Context) error)
+}
+
 type Supervisor struct {
-	eg  *errgroup.Group
-	ctx context.Context
+	wg sync.WaitGroup
 }
 
-func NewSupervisor(ctx context.Context) *Supervisor {
-	eg, ctx := errgroup.WithContext(ctx)
-	return &Supervisor{eg, ctx}
+var _ interface {
+	Starter
+} = (*Supervisor)(nil)
+
+func NewSupervisor() *Supervisor {
+	return &Supervisor{}
 }
 
-func (s *Supervisor) Start(f func(context.Context) error) {
-	s.eg.Go(func() error {
-		return f(s.ctx)
-	})
+func (s *Supervisor) Start(ctx context.Context, f func(ctx context.Context) error) {
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		err := f(ctx)
+		if err != nil {
+			panic(err)
+		}
+	}()
 }
 
 func (s *Supervisor) Wait() error {
-	return s.eg.Wait()
+	s.wg.Wait()
+	return nil
 }

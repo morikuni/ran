@@ -3,17 +3,19 @@ env:
 
 vars:
   test: &test go test -v ./...
-  build: &build go build -o bin/workflow cmd/workflow/main.go
 
 commands:
   test:
     workflow:
-    - cmd: *test
+    - name: test
+      cmd: *test
 
   build:
     workflow:
-    - cmd: *test
+    - name: test
+      cmd: *test
 
-    - cmd: *build
+    - name: build
+      cmd: go build -o bin/workflow cmd/workflow/main.go
       when:
       - test.succeeded

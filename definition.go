@@ -20,6 +20,7 @@ type Command struct {
 }
 
 type Task struct {
+	Name string
 	Cmd  string
 	When []string
 }
@@ -44,6 +45,7 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 		Env      map[string]string `yaml:"env"`
 		Commands map[string]struct {
 			Workflow []struct {
+				Name string   `yaml:"name"`
 				Cmd  string   `yaml:"cmd"`
 				When []string `yaml:"when"`
 			} `yaml:"workflow"`
@@ -60,10 +62,11 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 
 	for name, c := range raw.Commands {
 		workflow := make([]Task, len(c.Workflow))
-		for i, s := range c.Workflow {
+		for i, t := range c.Workflow {
 			workflow[i] = Task{
-				s.Cmd,
-				s.When,
+				t.Name,
+				t.Cmd,
+				t.When,
 			}
 		}
 		def.Commands[name] = Command{
