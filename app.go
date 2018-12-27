@@ -36,10 +36,18 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 
 	supervisor := NewSupervisor()
 	dispatcher := NewDispatcher(app.logger)
-	for _, task := range command.Workflow {
-		app.logger.Info(task.Cmd)
 
+	var initialRunners []*TaskRunner
+	for _, task := range command.Workflow {
 		tr := NewTaskRunner(task, def.Env, supervisor, dispatcher)
+		if len(task.When) == 0 {
+			initialRunners = append(initialRunners, tr)
+		} else {
+			dispatcher.Register(ctx, tr)
+		}
+	}
+
+	for _, tr := range initialRunners {
 		tr.Run(ctx)
 	}
 

@@ -10,21 +10,31 @@ import (
 )
 
 type TaskRunner struct {
-	env      Env
-	task     Task
-	starter  WorkerStarter
-	receiver EventReceiver
+	env              Env
+	task             Task
+	starter          WorkerStarter
+	receiver         EventReceiver
+	receivableTopics map[string]struct{}
+	head             map[string]Event
 }
 
 func NewTaskRunner(task Task, env Env, starter WorkerStarter, receiver EventReceiver) *TaskRunner {
 	if env == nil {
 		env = Env{}
 	}
+
+	receivableTopics := make(map[string]struct{}, len(task.When))
+	for _, topic := range task.When {
+		receivableTopics[topic] = struct{}{}
+	}
+
 	return &TaskRunner{
 		env,
 		task,
 		starter,
 		receiver,
+		receivableTopics,
+		make(map[string]Event, len(receivableTopics)),
 	}
 }
 
@@ -54,5 +64,13 @@ func (tr *TaskRunner) newEvent(event string, payload map[string]string) Event {
 }
 
 func (tr *TaskRunner) Receive(ctx context.Context, e Event) error {
+	if _, ok := tr.receivableTopics[e.Topic]; !ok {
+		return nil
+	}
+	tr.head[e.Topic] = e
+	if len(tr.receivableTopics) == len(tr.head) {
+		tr.head = make(map[string]Event, len(tr.receivableTopics))
+		tr.Run(ctx)
+	}
 	return nil
 }
