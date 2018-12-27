@@ -12,18 +12,18 @@ func TestStdLogger(t *testing.T) {
 	logger := NewStdLogger(buf)
 
 	logger.Info("aaa")
-	assert.Equal(t, "aaa", buf.String())
+	assert.Equal(t, "[INFO] aaa\n", buf.String())
 	buf.Reset()
 
 	logger.Info("aaa: %s", "bbb")
-	assert.Equal(t, "aaa: bbb", buf.String())
+	assert.Equal(t, "[INFO] aaa: bbb\n", buf.String())
 	buf.Reset()
 
 	logger.Error("aaa")
-	assert.Equal(t, "aaa", buf.String())
+	assert.Equal(t, "[ERROR] aaa\n", buf.String())
 	buf.Reset()
 
 	logger.Error("aaa: %s", "bbb")
-	assert.Equal(t, "aaa: bbb", buf.String())
+	assert.Equal(t, "[ERROR] aaa: bbb\n", buf.String())
 	buf.Reset()
 }
