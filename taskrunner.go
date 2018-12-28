@@ -49,13 +49,15 @@ func (tr *TaskRunner) Run(ctx context.Context) {
 
 		err := cmd.Run()
 		if err != nil {
-			return tr.receiver.Receive(ctx, tr.newEvent("failed", map[string]string{
+			tr.receiver.Receive(ctx, tr.newEvent("failed", map[string]string{
 				"output": buf.String(),
 			}))
+			return nil
 		}
-		return tr.receiver.Receive(ctx, tr.newEvent("succeeded", map[string]string{
+		tr.receiver.Receive(ctx, tr.newEvent("succeeded", map[string]string{
 			"output": buf.String(),
 		}))
+		return nil
 	})
 }
 
@@ -63,14 +65,13 @@ func (tr *TaskRunner) newEvent(event string, payload map[string]string) Event {
 	return NewEvent(strings.Join([]string{tr.task.Name, event}, "."), payload)
 }
 
-func (tr *TaskRunner) Receive(ctx context.Context, e Event) error {
+func (tr *TaskRunner) Receive(ctx context.Context, e Event) {
 	if _, ok := tr.receivableTopics[e.Topic]; !ok {
-		return nil
+		return
 	}
 	tr.head[e.Topic] = e
 	if len(tr.receivableTopics) == len(tr.head) {
 		tr.head = make(map[string]Event, len(tr.receivableTopics))
 		tr.Run(ctx)
 	}
-	return nil
 }

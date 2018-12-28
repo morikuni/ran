@@ -14,9 +14,8 @@ func NewEventRecorder() *EventRecorder {
 	return &EventRecorder{}
 }
 
-func (r *EventRecorder) Receive(ctx context.Context, e workflow.Event) error {
+func (r *EventRecorder) Receive(ctx context.Context, e workflow.Event) {
 	r.Events = append(r.Events, e)
-	return nil
 }
 
 func (r *EventRecorder) GetValue(index int, path string) string {

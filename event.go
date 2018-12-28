@@ -15,5 +15,5 @@ func NewEvent(topic string, payload map[string]string) Event {
 }
 
 type EventReceiver interface {
-	Receive(ctx context.Context, e Event) error
+	Receive(ctx context.Context, e Event)
 }

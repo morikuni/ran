@@ -13,14 +13,11 @@ func NewDispatcher(logger Logger) *Dispatcher {
 	return &Dispatcher{logger, nil}
 }
 
-func (d *Dispatcher) Receive(ctx context.Context, e Event) error {
+func (d *Dispatcher) Receive(ctx context.Context, e Event) {
 	d.logger.Info(e.Topic)
 	for _, receiver := range d.receivers {
-		if err := receiver.Receive(ctx, e); err != nil {
-			return err
-		}
+		receiver.Receive(ctx, e)
 	}
-	return nil
 }
 
 func (d *Dispatcher) Register(ctx context.Context, tr *TaskRunner) {
