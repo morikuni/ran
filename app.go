@@ -34,7 +34,7 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 		return fmt.Errorf("no such workflow: %s", target)
 	}
 
-	supervisor := NewSupervisor()
+	supervisor := NewSupervisor(app.logger)
 	dispatcher := NewDispatcher(app.logger)
 
 	var initialRunners []*TaskRunner

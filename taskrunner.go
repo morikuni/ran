@@ -47,12 +47,20 @@ func (tr *TaskRunner) Run(ctx context.Context) {
 		cmd.Stderr = io.MultiWriter(buf, os.Stderr)
 		cmd.Env = tr.env
 
-		err := cmd.Run()
+		if err := cmd.Start(); err != nil {
+			return err
+		}
+		tr.receiver.Receive(ctx, tr.newEvent("started", nil))
+
+		err := cmd.Wait()
+		tr.receiver.Receive(ctx, tr.newEvent("finished", map[string]string{
+			"output": buf.String(),
+		}))
 		if err != nil {
 			tr.receiver.Receive(ctx, tr.newEvent("failed", map[string]string{
 				"output": buf.String(),
 			}))
-			return nil
+			return err
 		}
 		tr.receiver.Receive(ctx, tr.newEvent("succeeded", map[string]string{
 			"output": buf.String(),

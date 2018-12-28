@@ -13,8 +13,8 @@ func TestTaskRunner(t *testing.T) {
 		task workflow.Task
 		env  workflow.Env
 
+		wantTopic  string
 		wantOutput string
-		wantErr    bool
 	}{
 		{
 			workflow.Task{
@@ -23,8 +23,8 @@ func TestTaskRunner(t *testing.T) {
 			},
 			nil,
 
+			"simple.succeeded",
 			"hello world\n",
-			false,
 		},
 		{
 			workflow.Task{
@@ -33,8 +33,8 @@ func TestTaskRunner(t *testing.T) {
 			},
 			nil,
 
+			"pipe.succeeded",
 			"hi! world\n",
-			false,
 		},
 		{
 			workflow.Task{
@@ -43,8 +43,8 @@ func TestTaskRunner(t *testing.T) {
 			},
 			nil,
 
+			"command substitution backquote.succeeded",
 			"backquote\n",
-			false,
 		},
 		{
 			workflow.Task{
@@ -53,8 +53,8 @@ func TestTaskRunner(t *testing.T) {
 			},
 			nil,
 
+			"command substitution dollar.succeeded",
 			"dollar\n",
-			false,
 		},
 		{
 			workflow.Task{
@@ -63,8 +63,8 @@ func TestTaskRunner(t *testing.T) {
 			},
 			nil,
 
+			"process substitution.succeeded",
 			"process\n",
-			false,
 		},
 		{
 			workflow.Task{
@@ -73,8 +73,8 @@ func TestTaskRunner(t *testing.T) {
 			},
 			nil,
 
+			"error.failed",
 			"cat: nofile: No such file or directory\n",
-			true,
 		},
 		{
 			workflow.Task{
@@ -83,8 +83,8 @@ func TestTaskRunner(t *testing.T) {
 			},
 			workflow.Env{"HELLO=world"},
 
+			"env.succeeded",
 			"world\n",
-			false,
 		},
 	}
 
@@ -94,12 +94,9 @@ func TestTaskRunner(t *testing.T) {
 			recorder := NewEventRecorder()
 			tr := workflow.NewTaskRunner(tc.task, tc.env, starter, recorder)
 			tr.Run(context.Background())
-			if tc.wantErr {
-				assert.Equal(t, tc.task.Name+".failed", recorder.GetTopic(0))
-			} else {
-				assert.Equal(t, tc.task.Name+".succeeded", recorder.GetTopic(0))
-			}
-			assert.Equal(t, tc.wantOutput, recorder.GetValue(0, "output"))
+			assert.NoError(t, starter.Error)
+			assert.Equal(t, tc.wantTopic, recorder.GetTopic(2))
+			assert.Equal(t, tc.wantOutput, recorder.GetValue(2, "output"))
 		})
 	}
 }

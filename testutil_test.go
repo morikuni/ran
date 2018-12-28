@@ -33,6 +33,7 @@ func (r *EventRecorder) GetTopic(index int) string {
 }
 
 type SynchronousStarter struct {
+	Error error
 }
 
 func NewSynchronousStarter() SynchronousStarter {
@@ -40,7 +41,5 @@ func NewSynchronousStarter() SynchronousStarter {
 }
 
 func (s SynchronousStarter) Start(ctx context.Context, f func(ctx context.Context) error) {
-	if err := f(ctx); err != nil {
-		panic(err)
-	}
+	s.Error = f(ctx)
 }
