@@ -72,5 +72,6 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 		})
 	}
 
+	cmd.SilenceErrors = true
 	return cmd.Execute()
 }
