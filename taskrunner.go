@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -50,19 +51,25 @@ func (tr *TaskRunner) Run(ctx context.Context) {
 		if err := cmd.Start(); err != nil {
 			return err
 		}
-		tr.receiver.Receive(ctx, tr.newEvent("started", nil))
+		pid := strconv.Itoa(cmd.Process.Pid)
+		tr.receiver.Receive(ctx, tr.newEvent("started", map[string]string{
+			"pid": pid,
+		}))
 
 		err := cmd.Wait()
 		tr.receiver.Receive(ctx, tr.newEvent("finished", map[string]string{
+			"pid":    pid,
 			"output": buf.String(),
 		}))
 		if err != nil {
 			tr.receiver.Receive(ctx, tr.newEvent("failed", map[string]string{
+				"pid":    pid,
 				"output": buf.String(),
 			}))
 			return err
 		}
 		tr.receiver.Receive(ctx, tr.newEvent("succeeded", map[string]string{
+			"pid":    pid,
 			"output": buf.String(),
 		}))
 		return nil
