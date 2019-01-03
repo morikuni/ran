@@ -15,8 +15,9 @@ type Definition struct {
 }
 
 type Command struct {
-	Name     string
-	Workflow []Task
+	Name        string
+	Description string
+	Workflow    []Task
 }
 
 type Task struct {
@@ -44,7 +45,8 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 	var raw struct {
 		Env      map[string]string `yaml:"env"`
 		Commands map[string]struct {
-			Workflow []struct {
+			Description string `yaml:"description"`
+			Workflow    []struct {
 				Name string   `yaml:"name"`
 				Cmd  string   `yaml:"cmd"`
 				When []string `yaml:"when"`
@@ -71,6 +73,7 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 		}
 		def.Commands[name] = Command{
 			name,
+			c.Description,
 			workflow,
 		}
 	}

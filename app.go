@@ -43,7 +43,9 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 
 	for _, c := range def.Commands {
 		cmd.AddCommand(&cobra.Command{
-			Use: c.Name,
+			Use:   c.Name,
+			Short: c.Description,
+			Long:  c.Description,
 			RunE: func(cmd *cobra.Command, args []string) error {
 				command, ok := def.Commands[cmd.Use]
 				if !ok {

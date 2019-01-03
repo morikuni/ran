@@ -6,11 +6,13 @@ vars:
 
 commands:
   test:
+    description: Run test
     workflow:
     - name: test
       cmd: *test
 
   build:
+    description: Run test, then build
     workflow:
     - name: test
       cmd: *test
