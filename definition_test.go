@@ -1,10 +1,10 @@
-package workflow_test
+package ran_test
 
 import (
 	"strings"
 	"testing"
 
-	"github.com/morikuni/workflow"
+	"github.com/morikuni/ran"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,11 +23,11 @@ commands:
     - cmd: aaa
     - cmd: *bbb
 `)
-	want := workflow.Definition{
-		Commands: map[string]workflow.Command{
+	want := ran.Definition{
+		Commands: map[string]ran.Command{
 			"test": {
 				Name: "test",
-				Workflow: []workflow.Task{
+				Workflow: []ran.Task{
 					{
 						Cmd: "aaa",
 					},
@@ -39,7 +39,7 @@ commands:
 		},
 	}
 
-	def, err := workflow.ParseDefinition(r)
+	def, err := ran.ParseDefinition(r)
 	env := def.Env
 	def.Env = nil
 	assert.NoError(t, err)
@@ -49,11 +49,11 @@ commands:
 }
 
 func TestLoadDefinition(t *testing.T) {
-	want := workflow.Definition{
-		Commands: map[string]workflow.Command{
+	want := ran.Definition{
+		Commands: map[string]ran.Command{
 			"all": {
 				Name: "all",
-				Workflow: []workflow.Task{
+				Workflow: []ran.Task{
 					{
 						Cmd: `echo "hello"`,
 					},
@@ -65,7 +65,7 @@ func TestLoadDefinition(t *testing.T) {
 		},
 	}
 
-	def, err := workflow.LoadDefinition("testdata/simple.yaml")
+	def, err := ran.LoadDefinition("testdata/simple.yaml")
 	env := def.Env
 	def.Env = nil
 	assert.NoError(t, err)

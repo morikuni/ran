@@ -18,6 +18,6 @@ commands:
       cmd: *test
 
     - name: build
-      cmd: go build -o bin/workflow cmd/workflow/main.go
+      cmd: go build -o bin/ran cmd/ran/main.go
       when:
       - test.succeeded

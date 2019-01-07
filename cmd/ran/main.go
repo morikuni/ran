@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/morikuni/workflow"
+	"github.com/morikuni/ran"
 )
 
 func main() {
@@ -14,8 +14,8 @@ func main() {
 }
 
 func app() (exitCode int) {
-	logger := workflow.NewStdLogger(os.Stdout)
-	app := workflow.NewApp(logger)
+	logger := ran.NewStdLogger(os.Stdout)
+	app := ran.NewApp(logger)
 
 	sig := make(chan os.Signal)
 	signal.Notify(sig, syscall.SIGTERM)

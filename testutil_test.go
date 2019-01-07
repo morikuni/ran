@@ -1,20 +1,20 @@
-package workflow_test
+package ran_test
 
 import (
 	"context"
 
-	"github.com/morikuni/workflow"
+	"github.com/morikuni/ran"
 )
 
 type EventRecorder struct {
-	Events []workflow.Event
+	Events []ran.Event
 }
 
 func NewEventRecorder() *EventRecorder {
 	return &EventRecorder{}
 }
 
-func (r *EventRecorder) Receive(ctx context.Context, e workflow.Event) {
+func (r *EventRecorder) Receive(ctx context.Context, e ran.Event) {
 	r.Events = append(r.Events, e)
 }
 

@@ -1,23 +1,23 @@
-package workflow_test
+package ran_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/morikuni/workflow"
+	"github.com/morikuni/ran"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTaskRunner(t *testing.T) {
 	cases := []struct {
-		task workflow.Task
-		env  workflow.Env
+		task ran.Task
+		env  ran.Env
 
 		wantTopic  string
 		wantOutput string
 	}{
 		{
-			workflow.Task{
+			ran.Task{
 				Name: "simple",
 				Cmd:  `echo "hello world"`,
 			},
@@ -27,7 +27,7 @@ func TestTaskRunner(t *testing.T) {
 			"hello world\n",
 		},
 		{
-			workflow.Task{
+			ran.Task{
 				Name: "pipe",
 				Cmd:  `echo "hello world" | sed -e "s/hello/hi!/g"`,
 			},
@@ -37,7 +37,7 @@ func TestTaskRunner(t *testing.T) {
 			"hi! world\n",
 		},
 		{
-			workflow.Task{
+			ran.Task{
 				Name: "command substitution backquote",
 				Cmd:  "echo `echo backquote`",
 			},
@@ -47,7 +47,7 @@ func TestTaskRunner(t *testing.T) {
 			"backquote\n",
 		},
 		{
-			workflow.Task{
+			ran.Task{
 				Name: "command substitution dollar",
 				Cmd:  "echo $(echo dollar)",
 			},
@@ -57,7 +57,7 @@ func TestTaskRunner(t *testing.T) {
 			"dollar\n",
 		},
 		{
-			workflow.Task{
+			ran.Task{
 				Name: "process substitution",
 				Cmd:  "cat <(echo process)",
 			},
@@ -67,7 +67,7 @@ func TestTaskRunner(t *testing.T) {
 			"process\n",
 		},
 		{
-			workflow.Task{
+			ran.Task{
 				Name: "error",
 				Cmd:  "cat nofile",
 			},
@@ -77,11 +77,11 @@ func TestTaskRunner(t *testing.T) {
 			"cat: nofile: No such file or directory\n",
 		},
 		{
-			workflow.Task{
+			ran.Task{
 				Name: "env",
 				Cmd:  "echo $HELLO",
 			},
-			workflow.Env{"HELLO=world"},
+			ran.Env{"HELLO=world"},
 
 			"env.succeeded",
 			"world\n",
@@ -92,7 +92,7 @@ func TestTaskRunner(t *testing.T) {
 		t.Run(tc.task.Name, func(t *testing.T) {
 			starter := NewSynchronousStarter()
 			recorder := NewEventRecorder()
-			tr := workflow.NewTaskRunner(tc.task, tc.env, starter, recorder)
+			tr := ran.NewTaskRunner(tc.task, tc.env, starter, recorder)
 			tr.Run(context.Background())
 			assert.NoError(t, starter.Error)
 			assert.Equal(t, tc.wantTopic, recorder.GetTopic(2))

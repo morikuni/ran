@@ -1,4 +1,4 @@
-package workflow
+package ran
 
 import (
 	"context"
@@ -20,14 +20,14 @@ func NewApp(logger Logger) App {
 
 func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) error {
 	cmd := &cobra.Command{
-		Use: "workflow",
+		Use: "ran",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return errors.New("require command")
 		},
 	}
 	cmd.SetArgs(args[1:])
 
-	file := cmd.PersistentFlags().StringP("file", "f", "workflow.yaml", "workflow definition file.")
+	file := cmd.PersistentFlags().StringP("file", "f", "ran.yaml", "ran definition file.")
 
 	// parse --file flag before execute to parse and append commands.
 	if err := cmd.PersistentFlags().Parse(args); err != nil && err != pflag.ErrHelp {
@@ -49,7 +49,7 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 			RunE: func(cmd *cobra.Command, args []string) error {
 				command, ok := def.Commands[cmd.Use]
 				if !ok {
-					return fmt.Errorf("no such workflow: %s", cmd.Use)
+					return fmt.Errorf("no such command: %s", cmd.Use)
 				}
 
 				supervisor := NewSupervisor(app.logger)
