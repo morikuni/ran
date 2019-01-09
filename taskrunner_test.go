@@ -14,7 +14,8 @@ func TestTaskRunner(t *testing.T) {
 		env  ran.Env
 
 		wantTopic  string
-		wantOutput string
+		wantStdout string
+		wantStderr string
 	}{
 		{
 			ran.Task{
@@ -25,6 +26,7 @@ func TestTaskRunner(t *testing.T) {
 
 			"simple.succeeded",
 			"hello world\n",
+			"",
 		},
 		{
 			ran.Task{
@@ -35,6 +37,7 @@ func TestTaskRunner(t *testing.T) {
 
 			"pipe.succeeded",
 			"hi! world\n",
+			"",
 		},
 		{
 			ran.Task{
@@ -45,6 +48,7 @@ func TestTaskRunner(t *testing.T) {
 
 			"command substitution backquote.succeeded",
 			"backquote\n",
+			"",
 		},
 		{
 			ran.Task{
@@ -55,6 +59,7 @@ func TestTaskRunner(t *testing.T) {
 
 			"command substitution dollar.succeeded",
 			"dollar\n",
+			"",
 		},
 		{
 			ran.Task{
@@ -65,6 +70,7 @@ func TestTaskRunner(t *testing.T) {
 
 			"process substitution.succeeded",
 			"process\n",
+			"",
 		},
 		{
 			ran.Task{
@@ -74,6 +80,7 @@ func TestTaskRunner(t *testing.T) {
 			nil,
 
 			"error.failed",
+			"",
 			"cat: nofile: No such file or directory\n",
 		},
 		{
@@ -85,6 +92,7 @@ func TestTaskRunner(t *testing.T) {
 
 			"env.succeeded",
 			"world\n",
+			"",
 		},
 	}
 
@@ -96,7 +104,8 @@ func TestTaskRunner(t *testing.T) {
 			tr.Run(context.Background())
 			assert.NoError(t, starter.Error)
 			assert.Equal(t, tc.wantTopic, recorder.GetTopic(2))
-			assert.Equal(t, tc.wantOutput, recorder.GetValue(2, "output"))
+			assert.Equal(t, tc.wantStdout, recorder.GetValue(2, "stdout"))
+			assert.Equal(t, tc.wantStderr, recorder.GetValue(2, "stderr"))
 		})
 	}
 }

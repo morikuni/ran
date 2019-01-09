@@ -43,9 +43,10 @@ func (tr *TaskRunner) Run(ctx context.Context) {
 	tr.starter.Start(ctx, func(ctx context.Context) error {
 		cmd := exec.Command("bash", "-c", tr.task.Cmd)
 
-		buf := &bytes.Buffer{}
-		cmd.Stdout = io.MultiWriter(buf, os.Stdout)
-		cmd.Stderr = io.MultiWriter(buf, os.Stderr)
+		stdout := &bytes.Buffer{}
+		stderr := &bytes.Buffer{}
+		cmd.Stdout = io.MultiWriter(stdout, os.Stdout)
+		cmd.Stderr = io.MultiWriter(stderr, os.Stderr)
 		cmd.Env = tr.env
 
 		if err := cmd.Start(); err != nil {
@@ -59,18 +60,21 @@ func (tr *TaskRunner) Run(ctx context.Context) {
 		err := cmd.Wait()
 		tr.receiver.Receive(ctx, tr.newEvent("finished", map[string]string{
 			"pid":    pid,
-			"output": buf.String(),
+			"stdout": stdout.String(),
+			"stderr": stderr.String(),
 		}))
 		if err != nil {
 			tr.receiver.Receive(ctx, tr.newEvent("failed", map[string]string{
 				"pid":    pid,
-				"output": buf.String(),
+				"stdout": stdout.String(),
+				"stderr": stderr.String(),
 			}))
 			return err
 		}
 		tr.receiver.Receive(ctx, tr.newEvent("succeeded", map[string]string{
 			"pid":    pid,
-			"output": buf.String(),
+			"stdout": stdout.String(),
+			"stderr": stderr.String(),
 		}))
 		return nil
 	})
