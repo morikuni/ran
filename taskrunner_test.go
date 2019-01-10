@@ -109,3 +109,38 @@ func TestTaskRunner(t *testing.T) {
 		})
 	}
 }
+
+func Test_EventsToParams(t *testing.T) {
+	events := map[string]ran.Event{
+		"aa.bb": ran.Event{
+			Topic:   "aa.bb",
+			Payload: map[string]string{"value1": "1"},
+		},
+		"aa.cc": ran.Event{
+			Topic:   "aa.cc",
+			Payload: map[string]string{"value2": "2"},
+		},
+		"xx.yy": ran.Event{
+			Topic:   "xx.yy",
+			Payload: map[string]string{"value3": "3"},
+		},
+	}
+
+	m := ran.EventsToParams(events)
+	expect := map[string]interface{}{
+		"aa": map[string]interface{}{
+			"bb": map[string]string{
+				"value1": "1",
+			},
+			"cc": map[string]string{
+				"value2": "2",
+			},
+		},
+		"xx": map[string]interface{}{
+			"yy": map[string]string{
+				"value3": "3",
+			},
+		},
+	}
+	assert.Equal(t, expect, m)
+}

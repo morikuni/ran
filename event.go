@@ -2,7 +2,6 @@ package ran
 
 import (
 	"context"
-	"strings"
 )
 
 type Event struct {

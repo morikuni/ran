@@ -94,3 +94,24 @@ func (tr *TaskRunner) Receive(ctx context.Context, e Event) {
 		tr.Run(ctx)
 	}
 }
+
+func eventsToParams(es map[string]Event) map[string]interface{} {
+	r := make(map[string]interface{})
+	for _, e := range es {
+		cur := r
+		paths := strings.Split(e.Topic, ".")
+		for i, p := range paths {
+			if i == len(paths)-1 {
+				cur[p] = e.Payload
+				break
+			}
+			m, ok := cur[p].(map[string]interface{})
+			if !ok {
+				m = make(map[string]interface{})
+			}
+			cur[p] = m
+			cur = m
+		}
+	}
+	return r
+}
