@@ -24,6 +24,7 @@ type Task struct {
 	Name string
 	Cmd  string
 	When []string
+	Env  map[string]string
 }
 
 type Env []string
@@ -47,9 +48,10 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 		Commands map[string]struct {
 			Description string `yaml:"description"`
 			Workflow    []struct {
-				Name string   `yaml:"name"`
-				Cmd  string   `yaml:"cmd"`
-				When []string `yaml:"when"`
+				Name string            `yaml:"name"`
+				Cmd  string            `yaml:"cmd"`
+				When []string          `yaml:"when"`
+				Env  map[string]string `yaml:"env"`
 			} `yaml:"workflow"`
 		} `yaml:"commands"`
 	}
@@ -58,7 +60,7 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 	}
 
 	def := Definition{
-		os.Environ(),
+		appendEnv(os.Environ(), raw.Env),
 		make(map[string]Command, len(raw.Commands)),
 	}
 
@@ -69,6 +71,7 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 				t.Name,
 				t.Cmd,
 				t.When,
+				t.Env,
 			}
 		}
 		def.Commands[name] = Command{
@@ -77,9 +80,14 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 			workflow,
 		}
 	}
-	for k, v := range raw.Env {
-		def.Env = append(def.Env, fmt.Sprintf("%s=%s", k, v))
-	}
 
 	return def, nil
+}
+
+func appendEnv(env Env, m map[string]string) Env {
+	for k, v := range m {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
+	// resize capacity to len(env) to prevent conflict when append values from multiple tasks.
+	return env[:len(env):len(env)]
 }

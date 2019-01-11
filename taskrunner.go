@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"text/template"
 )
 
 type TaskRunner struct {
@@ -40,6 +41,11 @@ func NewTaskRunner(task Task, env Env, starter WorkerStarter, receiver EventRece
 }
 
 func (tr *TaskRunner) Run(ctx context.Context) {
+	tr.run(ctx, nil)
+}
+
+func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
+	params := eventsToParams(events)
 	tr.starter.Start(ctx, func(ctx context.Context) error {
 		cmd := exec.Command("bash", "-c", tr.task.Cmd)
 
@@ -47,7 +53,13 @@ func (tr *TaskRunner) Run(ctx context.Context) {
 		stderr := &bytes.Buffer{}
 		cmd.Stdout = io.MultiWriter(stdout, os.Stdout)
 		cmd.Stderr = io.MultiWriter(stderr, os.Stderr)
-		cmd.Env = tr.env
+		cmd.Stdin = os.Stdin
+
+		env, err := evaluateEnv(tr.task.Env, params)
+		if err != nil {
+			return err
+		}
+		cmd.Env = appendEnv(tr.env, env)
 
 		if err := cmd.Start(); err != nil {
 			return err
@@ -57,7 +69,7 @@ func (tr *TaskRunner) Run(ctx context.Context) {
 			"pid": pid,
 		}))
 
-		err := cmd.Wait()
+		err = cmd.Wait()
 		tr.receiver.Receive(ctx, tr.newEvent("finished", map[string]string{
 			"pid":    pid,
 			"stdout": stdout.String(),
@@ -90,8 +102,9 @@ func (tr *TaskRunner) Receive(ctx context.Context, e Event) {
 	}
 	tr.head[e.Topic] = e
 	if len(tr.receivableTopics) == len(tr.head) {
+		events := tr.head
 		tr.head = make(map[string]Event, len(tr.receivableTopics))
-		tr.Run(ctx)
+		tr.run(ctx, events)
 	}
 }
 
@@ -114,4 +127,28 @@ func eventsToParams(es map[string]Event) map[string]interface{} {
 		}
 	}
 	return r
+}
+
+func evaluateEnv(env map[string]string, params map[string]interface{}) (map[string]string, error) {
+	result := make(map[string]string, len(env))
+	for k, v := range env {
+		v, err := executeTemplate(v, params)
+		if err != nil {
+			return nil, err
+		}
+		result[k] = v
+	}
+	return result, nil
+}
+
+func executeTemplate(tmpl string, params map[string]interface{}) (string, error) {
+	t, err := template.New("template").Parse(tmpl)
+	if err != nil {
+		return "", err
+	}
+	buf := &bytes.Buffer{}
+	if err := t.Execute(buf, params); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
