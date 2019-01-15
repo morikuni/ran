@@ -16,6 +16,7 @@ func TestTaskRunner(t *testing.T) {
 		wantTopic  string
 		wantStdout string
 		wantStderr string
+		wantDefers []string
 	}{
 		{
 			ran.Task{
@@ -27,6 +28,7 @@ func TestTaskRunner(t *testing.T) {
 			"simple.succeeded",
 			"hello world\n",
 			"",
+			nil,
 		},
 		{
 			ran.Task{
@@ -38,6 +40,7 @@ func TestTaskRunner(t *testing.T) {
 			"pipe.succeeded",
 			"hi! world\n",
 			"",
+			nil,
 		},
 		{
 			ran.Task{
@@ -49,6 +52,7 @@ func TestTaskRunner(t *testing.T) {
 			"command substitution backquote.succeeded",
 			"backquote\n",
 			"",
+			nil,
 		},
 		{
 			ran.Task{
@@ -60,6 +64,7 @@ func TestTaskRunner(t *testing.T) {
 			"command substitution dollar.succeeded",
 			"dollar\n",
 			"",
+			nil,
 		},
 		{
 			ran.Task{
@@ -71,6 +76,7 @@ func TestTaskRunner(t *testing.T) {
 			"process substitution.succeeded",
 			"process\n",
 			"",
+			nil,
 		},
 		{
 			ran.Task{
@@ -82,6 +88,7 @@ func TestTaskRunner(t *testing.T) {
 			"error.failed",
 			"",
 			"cat: nofile: No such file or directory\n",
+			nil,
 		},
 		{
 			ran.Task{
@@ -93,6 +100,19 @@ func TestTaskRunner(t *testing.T) {
 			"env.succeeded",
 			"world\n",
 			"",
+			nil,
+		},
+		{
+			ran.Task{
+				Name:  "defer",
+				Defer: "defer command",
+			},
+			nil,
+
+			"defer.succeeded",
+			"",
+			"",
+			[]string{"defer command"},
 		},
 	}
 
@@ -100,12 +120,22 @@ func TestTaskRunner(t *testing.T) {
 		t.Run(tc.task.Name, func(t *testing.T) {
 			starter := NewSynchronousStarter()
 			recorder := NewEventRecorder()
-			tr := ran.NewTaskRunner(tc.task, tc.env, starter, recorder)
+			stack := ran.NewStack()
+			tr := ran.NewTaskRunner(tc.task, tc.env, starter, recorder, stack)
 			tr.Run(context.Background())
 			assert.NoError(t, starter.Error)
 			assert.Equal(t, tc.wantTopic, recorder.GetTopic(2))
 			assert.Equal(t, tc.wantStdout, recorder.GetValue(2, "stdout"))
 			assert.Equal(t, tc.wantStderr, recorder.GetValue(2, "stderr"))
+			var defers []string
+			for {
+				cmd, ok := stack.Pop()
+				if !ok {
+					break
+				}
+				defers = append(defers, cmd.Args[len(cmd.Args)-1])
+			}
+			assert.Equal(t, tc.wantDefers, defers)
 		})
 	}
 }

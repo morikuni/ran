@@ -54,10 +54,11 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 
 				supervisor := NewSupervisor(app.logger)
 				dispatcher := NewDispatcher(app.logger)
+				stack := NewStack()
 
 				var initialRunners []*TaskRunner
 				for _, task := range command.Workflow {
-					tr := NewTaskRunner(task, def.Env, supervisor, dispatcher)
+					tr := NewTaskRunner(task, def.Env, supervisor, dispatcher, stack)
 					if len(task.When) == 0 {
 						initialRunners = append(initialRunners, tr)
 					} else {
@@ -69,7 +70,20 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 					tr.Run(ctx)
 				}
 
-				return supervisor.Wait()
+				if err := supervisor.Wait(); err != nil {
+					return err
+				}
+
+				for {
+					cmd, ok := stack.Pop()
+					if !ok {
+						break
+					}
+					if err := cmd.Run(); err != nil {
+						return err
+					}
+				}
+				return nil
 			},
 		})
 	}

@@ -16,11 +16,12 @@ type TaskRunner struct {
 	task             Task
 	starter          WorkerStarter
 	receiver         EventReceiver
+	stack            *Stack
 	receivableTopics map[string]struct{}
 	head             map[string]Event
 }
 
-func NewTaskRunner(task Task, env Env, starter WorkerStarter, receiver EventReceiver) *TaskRunner {
+func NewTaskRunner(task Task, env Env, starter WorkerStarter, receiver EventReceiver, stack *Stack) *TaskRunner {
 	if env == nil {
 		env = Env{}
 	}
@@ -35,6 +36,7 @@ func NewTaskRunner(task Task, env Env, starter WorkerStarter, receiver EventRece
 		task,
 		starter,
 		receiver,
+		stack,
 		receivableTopics,
 		make(map[string]Event, len(receivableTopics)),
 	}
@@ -47,19 +49,20 @@ func (tr *TaskRunner) Run(ctx context.Context) {
 func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 	params := eventsToParams(events)
 	tr.starter.Start(ctx, func(ctx context.Context) error {
-		cmd := exec.Command("bash", "-c", tr.task.Cmd)
-
-		stdout := &bytes.Buffer{}
-		stderr := &bytes.Buffer{}
-		cmd.Stdout = io.MultiWriter(stdout, os.Stdout)
-		cmd.Stderr = io.MultiWriter(stderr, os.Stderr)
-		cmd.Stdin = os.Stdin
-
-		env, err := evaluateEnv(tr.task.Env, params)
+		fixedEnv, err := evaluateEnv(tr.task.Env, params)
 		if err != nil {
 			return err
 		}
-		cmd.Env = appendEnv(tr.env, env)
+		env := appendEnv(tr.env, fixedEnv)
+
+		if tr.task.Defer != "" {
+			deferCmd := bashCmd(tr.task.Defer, os.Stdin, os.Stdout, os.Stderr, env)
+			tr.stack.Push(deferCmd)
+		}
+
+		stdout := &bytes.Buffer{}
+		stderr := &bytes.Buffer{}
+		cmd := bashCmd(tr.task.Cmd, os.Stdin, io.MultiWriter(stdout, os.Stdout), io.MultiWriter(stderr, os.Stderr), env)
 
 		if err := cmd.Start(); err != nil {
 			return err
@@ -151,4 +154,13 @@ func executeTemplate(tmpl string, params map[string]interface{}) (string, error)
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func bashCmd(cmd string, stdin io.Reader, stdout, stderr io.Writer, env []string) *exec.Cmd {
+	c := exec.Command("bash", "-c", cmd)
+	c.Stdout = stdout
+	c.Stderr = stderr
+	c.Stdin = stdin
+	c.Env = env
+	return c
 }
