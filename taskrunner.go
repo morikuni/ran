@@ -60,6 +60,10 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 			tr.stack.Push(deferCmd)
 		}
 
+		if tr.task.Cmd == "" {
+			return nil
+		}
+
 		stdout := &bytes.Buffer{}
 		stderr := &bytes.Buffer{}
 		cmd := bashCmd(tr.task.Cmd, os.Stdin, io.MultiWriter(stdout, os.Stdout), io.MultiWriter(stderr, os.Stderr), env)
