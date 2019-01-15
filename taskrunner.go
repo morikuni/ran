@@ -11,6 +11,12 @@ import (
 	"text/template"
 )
 
+type nopReceiver struct{}
+
+func (nopReceiver) Receive(_ context.Context, _ Event) {}
+
+var discardEvent nopReceiver
+
 type TaskRunner struct {
 	env              Env
 	task             Task
@@ -29,6 +35,10 @@ func NewTaskRunner(task Task, env Env, starter WorkerStarter, receiver EventRece
 	receivableTopics := make(map[string]struct{}, len(task.When))
 	for _, topic := range task.When {
 		receivableTopics[topic] = struct{}{}
+	}
+
+	if task.Name == "" {
+		receiver = discardEvent
 	}
 
 	return &TaskRunner{

@@ -109,7 +109,7 @@ func TestTaskRunner(t *testing.T) {
 			},
 			nil,
 
-			"defer.succeeded",
+			"",
 			"",
 			"",
 			[]string{"defer command"},
