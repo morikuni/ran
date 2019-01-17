@@ -19,7 +19,7 @@ vars:
 
 commands:
   test:
-    workflow:
+    tasks:
     - cmd: aaa
     - cmd: *bbb
 `)
@@ -27,7 +27,7 @@ commands:
 		Commands: map[string]ran.Command{
 			"test": {
 				Name: "test",
-				Workflow: []ran.Task{
+				Tasks: []ran.Task{
 					{
 						Cmd: "aaa",
 					},
@@ -53,7 +53,7 @@ func TestLoadDefinition(t *testing.T) {
 		Commands: map[string]ran.Command{
 			"all": {
 				Name: "all",
-				Workflow: []ran.Task{
+				Tasks: []ran.Task{
 					{
 						Cmd: `echo "hello"`,
 					},

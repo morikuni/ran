@@ -7,12 +7,12 @@ vars:
 commands:
   test:
     description: Run test
-    workflow:
+    tasks:
     - cmd: *test
 
   build:
     description: Run test, then build
-    workflow:
+    tasks:
     - name: test
       cmd: *test
 
@@ -23,7 +23,7 @@ commands:
 
   check:
     description: Debugging ran command
-    workflow:
+    tasks:
     - name: echo
       cmd: |
         echo "cmd" \
@@ -38,7 +38,7 @@ commands:
         EVENT_VALUE: "{{.echo.succeeded.stdout}}"
 
   test2:
-    workflow:
+    tasks:
     - name: a
       cmd: echo '{"result":"OK"}'
     - name: c
@@ -51,7 +51,7 @@ commands:
 
   question:
     description: Demo
-    workflow:
+    tasks:
     - name: ask_name
       cmd: echo What is your name?
 

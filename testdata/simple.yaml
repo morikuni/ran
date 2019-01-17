@@ -7,6 +7,6 @@ vars:
 
 commands:
   all:
-    workflow:
+    tasks:
     - cmd: echo "hello"
     - cmd: *pipe

@@ -17,7 +17,7 @@ type Definition struct {
 type Command struct {
 	Name        string
 	Description string
-	Workflow    []Task
+	Tasks       []Task
 }
 
 type Task struct {
@@ -48,13 +48,13 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 		Env      map[string]string `yaml:"env"`
 		Commands map[string]struct {
 			Description string `yaml:"description"`
-			Workflow    []struct {
+			Tasks       []struct {
 				Name  string            `yaml:"name"`
 				Cmd   string            `yaml:"cmd"`
 				When  []string          `yaml:"when"`
 				Env   map[string]string `yaml:"env"`
 				Defer string            `yaml:"defer"`
-			} `yaml:"workflow"`
+			} `yaml:"tasks"`
 		} `yaml:"commands"`
 	}
 	if err := yaml.Unmarshal(bs, &raw); err != nil {
@@ -67,9 +67,9 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 	}
 
 	for name, c := range raw.Commands {
-		workflow := make([]Task, len(c.Workflow))
-		for i, t := range c.Workflow {
-			workflow[i] = Task{
+		tasks := make([]Task, len(c.Tasks))
+		for i, t := range c.Tasks {
+			tasks[i] = Task{
 				t.Name,
 				t.Cmd,
 				t.When,
@@ -80,7 +80,7 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 		def.Commands[name] = Command{
 			name,
 			c.Description,
-			workflow,
+			tasks,
 		}
 	}
 
