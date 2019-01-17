@@ -8,8 +8,7 @@ commands:
   test:
     description: Run test
     workflow:
-    - name: test
-      cmd: *test
+    - cmd: *test
 
   build:
     description: Run test, then build
@@ -21,3 +20,61 @@ commands:
       cmd: go build -o bin/ran cmd/ran/main.go
       when:
       - test.succeeded
+
+  check:
+    description: Debugging ran command
+    workflow:
+    - name: echo
+      cmd: |
+        echo "cmd" \
+        "hoge"
+      defer: echo defer
+
+    - name: from_event
+      cmd: echo $EVENT_VALUE received
+      when:
+      - echo.succeeded
+      env:
+        EVENT_VALUE: "{{.echo.succeeded.stdout}}"
+
+  test2:
+    workflow:
+    - name: a
+      cmd: echo '{"result":"OK"}'
+    - name: c
+      cmd: |
+        [[ $(cat <(echo $VAL | jq .result -r)) == "OK" ]]
+      when:
+      - a.succeeded
+      env:
+        VAL: "{{.a.succeeded.stdout}}"
+
+  question:
+    description: Demo
+    workflow:
+    - name: ask_name
+      cmd: echo What is your name?
+
+    - name: read_name
+      cmd: read val; printf $val
+      when:
+      - ask_name.succeeded
+
+    - name: ask_age
+      cmd: echo How old are you?
+      when:
+      - read_name.succeeded
+
+    - name: read_age
+      cmd: read val; printf $val
+      when:
+      - ask_age.succeeded
+
+    - name: greet
+      cmd: echo "Hi, $NAME! You are $AGE years old!"
+      when:
+      - read_name.succeeded
+      - read_age.succeeded
+      env:
+        NAME: "{{.read_name.succeeded.stdout}}"
+        AGE: "{{.read_age.succeeded.stdout}}"
