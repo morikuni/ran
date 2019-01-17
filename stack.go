@@ -1,22 +1,27 @@
 package ran
 
-import (
-	"os/exec"
-)
-
-type Stack struct {
-	cmds []*exec.Cmd
+type Cmd interface {
+	Run() error
 }
 
-func NewStack() *Stack {
-	return &Stack{}
+type Stack interface {
+	Push(cmd Cmd)
+	Pop() (Cmd, bool)
 }
 
-func (s *Stack) Push(cmd *exec.Cmd) {
+type stack struct {
+	cmds []Cmd
+}
+
+func NewStack() Stack {
+	return &stack{}
+}
+
+func (s *stack) Push(cmd Cmd) {
 	s.cmds = append(s.cmds, cmd)
 }
 
-func (s *Stack) Pop() (*exec.Cmd, bool) {
+func (s *stack) Pop() (Cmd, bool) {
 	if len(s.cmds) == 0 {
 		return nil, false
 	}

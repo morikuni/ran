@@ -22,12 +22,12 @@ type TaskRunner struct {
 	task             Task
 	starter          WorkerStarter
 	receiver         EventReceiver
-	stack            *Stack
+	stack            Stack
 	receivableTopics map[string]struct{}
 	head             map[string]Event
 }
 
-func NewTaskRunner(task Task, env Env, starter WorkerStarter, receiver EventReceiver, stack *Stack) *TaskRunner {
+func NewTaskRunner(task Task, env Env, starter WorkerStarter, receiver EventReceiver, stack Stack) *TaskRunner {
 	if env == nil {
 		env = Env{}
 	}
