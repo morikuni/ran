@@ -1,141 +1,97 @@
 package ran_test
 
 import (
+	"bytes"
 	"context"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/morikuni/ran"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTaskRunner(t *testing.T) {
-	cases := []struct {
+	cases := map[string]struct {
 		task ran.Task
 		env  ran.Env
 
-		wantTopic  string
+		wantTopics []string
 		wantStdout string
 		wantStderr string
-		wantDefers []string
 	}{
-		{
+		"success": {
 			ran.Task{
-				Name: "simple",
-				Cmd:  `echo "hello world"`,
+				Name: "success",
+				Cmd:  `echo "$VALUE"`,
+				Env: map[string]string{
+					"VALUE": "hello world",
+				},
 			},
 			nil,
 
-			"simple.succeeded",
+			[]string{"success.started", "success.finished", "success.succeeded"},
 			"hello world\n",
 			"",
-			nil,
 		},
-		{
-			ran.Task{
-				Name: "pipe",
-				Cmd:  `echo "hello world" | sed -e "s/hello/hi!/g"`,
-			},
-			nil,
-
-			"pipe.succeeded",
-			"hi! world\n",
-			"",
-			nil,
-		},
-		{
-			ran.Task{
-				Name: "command substitution backquote",
-				Cmd:  "echo `echo backquote`",
-			},
-			nil,
-
-			"command substitution backquote.succeeded",
-			"backquote\n",
-			"",
-			nil,
-		},
-		{
-			ran.Task{
-				Name: "command substitution dollar",
-				Cmd:  "echo $(echo dollar)",
-			},
-			nil,
-
-			"command substitution dollar.succeeded",
-			"dollar\n",
-			"",
-			nil,
-		},
-		{
-			ran.Task{
-				Name: "process substitution",
-				Cmd:  "cat <(echo process)",
-			},
-			nil,
-
-			"process substitution.succeeded",
-			"process\n",
-			"",
-			nil,
-		},
-		{
+		"error": {
 			ran.Task{
 				Name: "error",
 				Cmd:  "cat nofile",
 			},
 			nil,
 
-			"error.failed",
+			[]string{"error.started", "error.finished", "error.failed"},
 			"",
 			"cat: nofile: No such file or directory\n",
-			nil,
 		},
-		{
-			ran.Task{
-				Name: "env",
-				Cmd:  "echo $HELLO",
-			},
-			ran.Env{"HELLO=world"},
-
-			"env.succeeded",
-			"world\n",
-			"",
-			nil,
-		},
-		{
+		"defer": {
 			ran.Task{
 				Name:  "defer",
-				Defer: "defer command",
+				Defer: "echo defer",
 			},
 			nil,
 
+			nil,
+			"defer\n",
 			"",
+		},
+		"no events": {
+			ran.Task{
+				Cmd: "echo no name",
+			},
+			nil,
+
+			nil,
+			"no name\n",
 			"",
-			"",
-			[]string{"defer command"},
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.task.Name, func(t *testing.T) {
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
 			starter := NewSynchronousStarter()
 			recorder := NewEventRecorder()
 			stack := ran.NewStack()
-			tr := ran.NewTaskRunner(tc.task, tc.env, starter, recorder, stack)
+			stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+			tr := ran.NewTaskRunner(tc.task, tc.env, starter, recorder, stack, bytes.NewReader(nil), stdout, stderr)
 			tr.Run(context.Background())
-			assert.NoError(t, starter.Error)
-			assert.Equal(t, tc.wantTopic, recorder.GetTopic(2))
-			assert.Equal(t, tc.wantStdout, recorder.GetValue(2, "stdout"))
-			assert.Equal(t, tc.wantStderr, recorder.GetValue(2, "stderr"))
-			var defers []string
 			for {
 				cmd, ok := stack.Pop()
 				if !ok {
 					break
 				}
-				defers = append(defers, cmd.Args[len(cmd.Args)-1])
+				require.NoError(t, cmd.Run())
 			}
-			assert.Equal(t, tc.wantDefers, defers)
+			var topics []string
+			for _, e := range recorder.Events {
+				topics = append(topics, e.Topic)
+			}
+
+			assert.NoError(t, starter.Error)
+			assert.Equal(t, tc.wantTopics, topics)
+			assert.Equal(t, tc.wantStdout, stdout.String())
+			assert.Equal(t, tc.wantStderr, stderr.String())
 		})
 	}
 }

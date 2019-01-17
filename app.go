@@ -58,7 +58,7 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 
 				var initialRunners []*TaskRunner
 				for _, task := range command.Workflow {
-					tr := NewTaskRunner(task, def.Env, supervisor, dispatcher, stack)
+					tr := NewTaskRunner(task, def.Env, supervisor, dispatcher, stack, os.Stdin, os.Stdout, os.Stderr)
 					if len(task.When) == 0 {
 						initialRunners = append(initialRunners, tr)
 					} else {

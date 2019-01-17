@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -25,9 +24,22 @@ type TaskRunner struct {
 	stack            Stack
 	receivableTopics map[string]struct{}
 	head             map[string]Event
+
+	stdin  io.Reader
+	stdout io.Writer
+	stderr io.Writer
 }
 
-func NewTaskRunner(task Task, env Env, starter WorkerStarter, receiver EventReceiver, stack Stack) *TaskRunner {
+func NewTaskRunner(
+	task Task,
+	env Env,
+	starter WorkerStarter,
+	receiver EventReceiver,
+	stack Stack,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) *TaskRunner {
 	if env == nil {
 		env = Env{}
 	}
@@ -49,6 +61,9 @@ func NewTaskRunner(task Task, env Env, starter WorkerStarter, receiver EventRece
 		stack,
 		receivableTopics,
 		make(map[string]Event, len(receivableTopics)),
+		stdin,
+		stdout,
+		stderr,
 	}
 }
 
@@ -66,7 +81,7 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 		env := appendEnv(tr.env, fixedEnv)
 
 		if tr.task.Defer != "" {
-			deferCmd := bashCmd(tr.task.Defer, os.Stdin, os.Stdout, os.Stderr, env)
+			deferCmd := bashCmd(tr.task.Defer, tr.stdin, tr.stdout, tr.stderr, env)
 			tr.stack.Push(deferCmd)
 		}
 
@@ -76,7 +91,7 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 
 		stdout := &bytes.Buffer{}
 		stderr := &bytes.Buffer{}
-		cmd := bashCmd(tr.task.Cmd, os.Stdin, io.MultiWriter(stdout, os.Stdout), io.MultiWriter(stderr, os.Stderr), env)
+		cmd := bashCmd(tr.task.Cmd, tr.stdin, io.MultiWriter(stdout, tr.stdout), io.MultiWriter(stderr, tr.stderr), env)
 
 		if err := cmd.Start(); err != nil {
 			return err

@@ -18,20 +18,6 @@ func (r *EventRecorder) Receive(ctx context.Context, e ran.Event) {
 	r.Events = append(r.Events, e)
 }
 
-func (r *EventRecorder) GetValue(index int, path string) string {
-	if len(r.Events) <= index {
-		return ""
-	}
-	return r.Events[index].Payload[path]
-}
-
-func (r *EventRecorder) GetTopic(index int) string {
-	if len(r.Events) <= index {
-		return ""
-	}
-	return r.Events[index].Topic
-}
-
 type SynchronousStarter struct {
 	Error error
 }
