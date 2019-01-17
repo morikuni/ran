@@ -1,6 +1,9 @@
 package ran
 
 type Cmd interface {
+	PID() string
+	Start() error
+	Wait() error
 	Run() error
 }
 

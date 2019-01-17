@@ -3,6 +3,7 @@ package ran
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os/exec"
 	"strconv"
@@ -96,7 +97,7 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 		if err := cmd.Start(); err != nil {
 			return err
 		}
-		pid := strconv.Itoa(cmd.Process.Pid)
+		pid := cmd.PID()
 		tr.receiver.Receive(ctx, tr.newEvent("started", map[string]string{
 			"pid": pid,
 		}))
@@ -185,11 +186,41 @@ func executeTemplate(tmpl string, params map[string]interface{}) (string, error)
 	return buf.String(), nil
 }
 
-func bashCmd(cmd string, stdin io.Reader, stdout, stderr io.Writer, env []string) *exec.Cmd {
+func bashCmd(cmd string, stdin io.Reader, stdout, stderr io.Writer, env []string) Cmd {
 	c := exec.Command("bash", "-c", cmd)
 	c.Stdout = stdout
 	c.Stderr = stderr
 	c.Stdin = stdin
 	c.Env = env
-	return c
+	return gracefulErrorCmd{cmd, c}
+}
+
+type gracefulErrorCmd struct {
+	cmd        string
+	underlying *exec.Cmd
+}
+
+func (cmd gracefulErrorCmd) PID() string {
+	return strconv.Itoa(cmd.underlying.Process.Pid)
+}
+
+func (cmd gracefulErrorCmd) Start() error {
+	if err := cmd.underlying.Start(); err != nil {
+		return fmt.Errorf("%q: %s", cmd.cmd, err.Error())
+	}
+	return nil
+}
+
+func (cmd gracefulErrorCmd) Wait() error {
+	if err := cmd.underlying.Wait(); err != nil {
+		return fmt.Errorf("%q: %s", cmd.cmd, err.Error())
+	}
+	return nil
+}
+
+func (cmd gracefulErrorCmd) Run() error {
+	if err := cmd.underlying.Run(); err != nil {
+		return fmt.Errorf("%q: %s", cmd.cmd, err.Error())
+	}
+	return nil
 }
