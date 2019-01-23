@@ -9,14 +9,10 @@ import (
 
 func TestStdLogger(t *testing.T) {
 	buf := &bytes.Buffer{}
-	logger := NewStdLogger(buf)
+	logger := NewStdLogger(buf, Error)
 
 	logger.Info("aaa")
-	assert.Equal(t, "[INFO] aaa\n", buf.String())
-	buf.Reset()
-
-	logger.Info("aaa: %s", "bbb")
-	assert.Equal(t, "[INFO] aaa: bbb\n", buf.String())
+	assert.Equal(t, "", buf.String())
 	buf.Reset()
 
 	logger.Error("aaa")

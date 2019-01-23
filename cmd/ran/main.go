@@ -14,17 +14,10 @@ func main() {
 }
 
 func app() (exitCode int) {
-	logger := ran.NewStdLogger(os.Stdout)
-	app := ran.NewApp(logger)
+	app := ran.NewApp()
 
 	sig := make(chan os.Signal)
 	signal.Notify(sig, syscall.SIGTERM)
 
-	err := app.Run(context.Background(), os.Args, sig)
-	if err != nil {
-		logger.Error(err.Error())
-		return 1
-	}
-
-	return 0
+	return app.Run(context.Background(), os.Args, sig)
 }

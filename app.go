@@ -11,14 +11,13 @@ import (
 )
 
 type App struct {
-	logger Logger
 }
 
-func NewApp(logger Logger) App {
-	return App{logger}
+func NewApp() App {
+	return App{}
 }
 
-func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) error {
+func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) int {
 	cmd := &cobra.Command{
 		Use: "ran",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -28,17 +27,28 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 	cmd.SetArgs(args[1:])
 
 	file := cmd.PersistentFlags().StringP("file", "f", "ran.yaml", "ran definition file.")
+	logLevel := cmd.PersistentFlags().String("log-level", "discard", "log level. (debug, info, error, discard)")
 
 	// parse --file flag before execute to parse and append commands.
 	if err := cmd.PersistentFlags().Parse(args); err != nil && err != pflag.ErrHelp {
 		cmd.Usage()
-		return err
+		fmt.Fprintln(os.Stderr, err)
+		return 1
 	}
+
+	level, err := NewLogLevel(*logLevel)
+	if err != nil {
+		cmd.Usage()
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	logger := NewStdLogger(os.Stdout, level)
 
 	def, err := LoadDefinition(*file)
 	if err != nil {
 		cmd.Usage()
-		return err
+		fmt.Fprintln(os.Stderr, err)
+		return 1
 	}
 
 	for _, c := range def.Commands {
@@ -52,13 +62,13 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 					return fmt.Errorf("no such command: %s", cmd.Use)
 				}
 
-				supervisor := NewSupervisor(app.logger)
-				dispatcher := NewDispatcher(app.logger)
+				supervisor := NewSupervisor(logger)
+				dispatcher := NewDispatcher(logger)
 				stack := NewStack()
 
 				var initialRunners []*TaskRunner
 				for _, task := range command.Tasks {
-					tr := NewTaskRunner(task, def.Env, supervisor, dispatcher, stack, os.Stdin, os.Stdout, os.Stderr)
+					tr := NewTaskRunner(task, def.Env, supervisor, dispatcher, stack, os.Stdin, os.Stdout, os.Stderr, logger)
 					if len(task.When) == 0 {
 						initialRunners = append(initialRunners, tr)
 					} else {
@@ -89,5 +99,9 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 	}
 
 	cmd.SilenceErrors = true
-	return cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		logger.Error("%s", err.Error())
+		return 1
+	}
+	return 0
 }
