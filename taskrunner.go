@@ -29,6 +29,8 @@ type TaskRunner struct {
 	stdin  io.Reader
 	stdout io.Writer
 	stderr io.Writer
+
+	logger Logger
 }
 
 func NewTaskRunner(
@@ -40,6 +42,7 @@ func NewTaskRunner(
 	stdin io.Reader,
 	stdout io.Writer,
 	stderr io.Writer,
+	logger Logger,
 ) *TaskRunner {
 	if env == nil {
 		env = Env{}
@@ -65,6 +68,7 @@ func NewTaskRunner(
 		stdin,
 		stdout,
 		stderr,
+		logger,
 	}
 }
 
@@ -83,7 +87,7 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 
 		stdin, stdout, stderr := tr.getIO()
 		if tr.task.Defer != "" {
-			deferCmd := bashCmd(tr.task.Defer, stdin, stdout, stderr, env)
+			deferCmd := bashCmd(tr.task.Defer, stdin, stdout, stderr, env, tr.logger)
 			tr.stack.Push(deferCmd)
 		}
 
@@ -93,7 +97,7 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 
 		bufOut := &bytes.Buffer{}
 		bufErr := &bytes.Buffer{}
-		cmd := bashCmd(tr.task.Cmd, tr.stdin, io.MultiWriter(bufOut, stdout), io.MultiWriter(bufErr, stderr), env)
+		cmd := bashCmd(tr.task.Cmd, tr.stdin, io.MultiWriter(bufOut, stdout), io.MultiWriter(bufErr, stderr), env, tr.logger)
 
 		if err := cmd.Start(); err != nil {
 			return err
@@ -191,25 +195,31 @@ func executeTemplate(tmpl string, params map[string]interface{}) (string, error)
 	return buf.String(), nil
 }
 
-func bashCmd(cmd string, stdin io.Reader, stdout, stderr io.Writer, env []string) Cmd {
+func bashCmd(cmd string, stdin io.Reader, stdout, stderr io.Writer, env []string, logger Logger) Cmd {
 	c := exec.Command("sh", "-c", cmd)
 	c.Stdout = stdout
 	c.Stderr = stderr
 	c.Stdin = stdin
 	c.Env = env
-	return gracefulErrorCmd{cmd, c}
+	return gracefulErrorCmd{cmd, c, logger}
 }
 
 type gracefulErrorCmd struct {
 	cmd        string
 	underlying *exec.Cmd
+	logger     Logger
 }
 
 func (cmd gracefulErrorCmd) PID() string {
 	return strconv.Itoa(cmd.underlying.Process.Pid)
 }
 
+func (cmd gracefulErrorCmd) log() {
+	cmd.logger.Info("> %s", strings.Replace(strings.TrimRight(cmd.cmd, " \n"), "\n", "\n> ", -1))
+}
+
 func (cmd gracefulErrorCmd) Start() error {
+	cmd.log()
 	if err := cmd.underlying.Start(); err != nil {
 		return fmt.Errorf("%q: %s", cmd.cmd, err.Error())
 	}
@@ -224,6 +234,7 @@ func (cmd gracefulErrorCmd) Wait() error {
 }
 
 func (cmd gracefulErrorCmd) Run() error {
+	cmd.log()
 	if err := cmd.underlying.Run(); err != nil {
 		return fmt.Errorf("%q: %s", cmd.cmd, err.Error())
 	}
