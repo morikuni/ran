@@ -187,7 +187,7 @@ func executeTemplate(tmpl string, params map[string]interface{}) (string, error)
 }
 
 func bashCmd(cmd string, stdin io.Reader, stdout, stderr io.Writer, env []string) Cmd {
-	c := exec.Command("bash", "-c", cmd)
+	c := exec.Command("sh", "-c", cmd)
 	c.Stdout = stdout
 	c.Stderr = stderr
 	c.Stdin = stdin
