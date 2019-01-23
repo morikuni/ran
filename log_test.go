@@ -16,10 +16,10 @@ func TestStdLogger(t *testing.T) {
 	buf.Reset()
 
 	logger.Error("aaa")
-	assert.Equal(t, "[ERROR] aaa\n", buf.String())
+	assert.Equal(t, "aaa\n", buf.String())
 	buf.Reset()
 
 	logger.Error("aaa: %s", "bbb")
-	assert.Equal(t, "[ERROR] aaa: bbb\n", buf.String())
+	assert.Equal(t, "aaa: bbb\n", buf.String())
 	buf.Reset()
 }

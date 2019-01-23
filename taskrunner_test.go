@@ -3,6 +3,7 @@ package ran_test
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -74,7 +75,8 @@ func TestTaskRunner(t *testing.T) {
 			recorder := NewEventRecorder()
 			stack := ran.NewStack()
 			stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
-			tr := ran.NewTaskRunner(tc.task, tc.env, starter, recorder, stack, bytes.NewReader(nil), stdout, stderr)
+			logger := ran.NewStdLogger(ioutil.Discard, ran.Discard)
+			tr := ran.NewTaskRunner(tc.task, tc.env, starter, recorder, stack, bytes.NewReader(nil), stdout, stderr, logger)
 			tr.Run(context.Background())
 			for {
 				cmd, ok := stack.Pop()
