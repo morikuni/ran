@@ -14,7 +14,7 @@ func NewDispatcher(logger Logger) *Dispatcher {
 }
 
 func (d *Dispatcher) Receive(ctx context.Context, e Event) {
-	d.logger.Debug(e.Topic)
+	d.logger.Debug("event: %q", e.Topic)
 	for _, receiver := range d.receivers {
 		receiver.Receive(ctx, e)
 	}
