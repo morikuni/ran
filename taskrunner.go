@@ -81,8 +81,9 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 		}
 		env := appendEnv(tr.env, fixedEnv)
 
+		stdin, stdout, stderr := tr.getIO()
 		if tr.task.Defer != "" {
-			deferCmd := bashCmd(tr.task.Defer, tr.stdin, tr.stdout, tr.stderr, env)
+			deferCmd := bashCmd(tr.task.Defer, stdin, stdout, stderr, env)
 			tr.stack.Push(deferCmd)
 		}
 
@@ -90,9 +91,9 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 			return nil
 		}
 
-		stdout := &bytes.Buffer{}
-		stderr := &bytes.Buffer{}
-		cmd := bashCmd(tr.task.Cmd, tr.stdin, io.MultiWriter(stdout, tr.stdout), io.MultiWriter(stderr, tr.stderr), env)
+		bufOut := &bytes.Buffer{}
+		bufErr := &bytes.Buffer{}
+		cmd := bashCmd(tr.task.Cmd, tr.stdin, io.MultiWriter(bufOut, stdout), io.MultiWriter(bufErr, stderr), env)
 
 		if err := cmd.Start(); err != nil {
 			return err
@@ -105,21 +106,21 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 		err = cmd.Wait()
 		tr.receiver.Receive(ctx, tr.newEvent("finished", map[string]string{
 			"pid":    pid,
-			"stdout": stdout.String(),
-			"stderr": stderr.String(),
+			"stdout": bufOut.String(),
+			"stderr": bufErr.String(),
 		}))
 		if err != nil {
 			tr.receiver.Receive(ctx, tr.newEvent("failed", map[string]string{
 				"pid":    pid,
-				"stdout": stdout.String(),
-				"stderr": stderr.String(),
+				"stdout": bufOut.String(),
+				"stderr": bufErr.String(),
 			}))
 			return err
 		}
 		tr.receiver.Receive(ctx, tr.newEvent("succeeded", map[string]string{
 			"pid":    pid,
-			"stdout": stdout.String(),
-			"stderr": stderr.String(),
+			"stdout": bufOut.String(),
+			"stderr": bufErr.String(),
 		}))
 		return nil
 	})
@@ -139,6 +140,10 @@ func (tr *TaskRunner) Receive(ctx context.Context, e Event) {
 		tr.head = make(map[string]Event, len(tr.receivableTopics))
 		tr.run(ctx, events)
 	}
+}
+
+func (tr *TaskRunner) getIO() (stdin io.Reader, stdout, stderr io.Writer) {
+	return tr.stdin, tr.stdout, tr.stderr
 }
 
 func eventsToParams(es map[string]Event) map[string]interface{} {
