@@ -45,7 +45,7 @@ func (cr StdCommandRunner) RunCommand(ctx context.Context, command string) error
 		return fmt.Errorf("no such command: %s", command)
 	}
 
-	supervisor := NewSupervisor(cr.logger)
+	supervisor := NewSupervisor()
 	dispatcher := NewDispatcher(cr.logger)
 	stack := NewStack()
 

@@ -10,8 +10,7 @@ type WorkerStarter interface {
 }
 
 type Supervisor struct {
-	wg     sync.WaitGroup
-	logger Logger
+	wg sync.WaitGroup
 
 	mu      sync.Mutex
 	lastErr error
@@ -21,10 +20,8 @@ var _ interface {
 	WorkerStarter
 } = (*Supervisor)(nil)
 
-func NewSupervisor(logger Logger) *Supervisor {
-	return &Supervisor{
-		logger: logger,
-	}
+func NewSupervisor() *Supervisor {
+	return &Supervisor{}
 }
 
 func (s *Supervisor) Start(ctx context.Context, f func(ctx context.Context) error) {
@@ -35,9 +32,6 @@ func (s *Supervisor) Start(ctx context.Context, f func(ctx context.Context) erro
 		if err != nil {
 			s.mu.Lock()
 			defer s.mu.Unlock()
-			if s.lastErr != nil {
-				s.logger.Error(s.lastErr.Error())
-			}
 			s.lastErr = err
 		}
 	}()
