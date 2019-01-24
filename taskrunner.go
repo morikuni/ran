@@ -3,10 +3,7 @@ package ran
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
-	"os/exec"
-	"strconv"
 	"strings"
 	"sync"
 	"text/template"
@@ -91,27 +88,27 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 
 		stdin, stdout, stderr := tr.getIO()
 		if tr.task.Defer != "" {
-			deferCmd := bashCmd(tr.task.Defer, stdin, stdout, stderr, env, tr.logger)
-			tr.stack.Push(deferCmd)
+			deferScript := shScript(tr.task.Defer, stdin, stdout, stderr, env, tr.logger)
+			tr.stack.Push(deferScript)
 		}
 
-		if tr.task.Cmd == "" {
+		if tr.task.Script == "" {
 			return nil
 		}
 
 		bufOut := &bytes.Buffer{}
 		bufErr := &bytes.Buffer{}
-		cmd := bashCmd(tr.task.Cmd, tr.stdin, io.MultiWriter(bufOut, stdout), io.MultiWriter(bufErr, stderr), env, tr.logger)
+		script := shScript(tr.task.Script, tr.stdin, io.MultiWriter(bufOut, stdout), io.MultiWriter(bufErr, stderr), env, tr.logger)
 
-		if err := cmd.Start(); err != nil {
+		if err := script.Start(); err != nil {
 			return err
 		}
-		pid := cmd.PID()
+		pid := script.PID()
 		tr.receiver.Receive(ctx, tr.newEvent("started", map[string]string{
 			"pid": pid,
 		}))
 
-		err = cmd.Wait()
+		err = script.Wait()
 		tr.receiver.Receive(ctx, tr.newEvent("finished", map[string]string{
 			"pid":    pid,
 			"stdout": bufOut.String(),
@@ -199,50 +196,4 @@ func executeTemplate(tmpl string, params map[string]interface{}) (string, error)
 		return "", err
 	}
 	return buf.String(), nil
-}
-
-func bashCmd(cmd string, stdin io.Reader, stdout, stderr io.Writer, env []string, logger Logger) Cmd {
-	c := exec.Command("sh", "-c", cmd)
-	c.Stdout = stdout
-	c.Stderr = stderr
-	c.Stdin = stdin
-	c.Env = env
-	return gracefulErrorCmd{cmd, c, logger}
-}
-
-type gracefulErrorCmd struct {
-	cmd        string
-	underlying *exec.Cmd
-	logger     Logger
-}
-
-func (cmd gracefulErrorCmd) PID() string {
-	return strconv.Itoa(cmd.underlying.Process.Pid)
-}
-
-func (cmd gracefulErrorCmd) log() {
-	cmd.logger.Info("> %s", strings.Replace(strings.TrimRight(cmd.cmd, " \n"), "\n", "\n> ", -1))
-}
-
-func (cmd gracefulErrorCmd) Start() error {
-	cmd.log()
-	if err := cmd.underlying.Start(); err != nil {
-		return fmt.Errorf("%q: %s", cmd.cmd, err.Error())
-	}
-	return nil
-}
-
-func (cmd gracefulErrorCmd) Wait() error {
-	if err := cmd.underlying.Wait(); err != nil {
-		return fmt.Errorf("%q: %s", cmd.cmd, err.Error())
-	}
-	return nil
-}
-
-func (cmd gracefulErrorCmd) Run() error {
-	cmd.log()
-	if err := cmd.underlying.Run(); err != nil {
-		return fmt.Errorf("%q: %s", cmd.cmd, err.Error())
-	}
-	return nil
 }

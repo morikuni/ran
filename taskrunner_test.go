@@ -23,8 +23,8 @@ func TestTaskRunner(t *testing.T) {
 	}{
 		"success": {
 			ran.Task{
-				Name: "success",
-				Cmd:  `echo "$VALUE"`,
+				Name:   "success",
+				Script: `echo "$VALUE"`,
 				Env: map[string]string{
 					"VALUE": "hello world",
 				},
@@ -37,8 +37,8 @@ func TestTaskRunner(t *testing.T) {
 		},
 		"error": {
 			ran.Task{
-				Name: "error",
-				Cmd:  "cat nofile",
+				Name:   "error",
+				Script: "cat nofile",
 			},
 			nil,
 
@@ -59,7 +59,7 @@ func TestTaskRunner(t *testing.T) {
 		},
 		"no events": {
 			ran.Task{
-				Cmd: "echo no name",
+				Script: "echo no name",
 			},
 			nil,
 
@@ -79,11 +79,11 @@ func TestTaskRunner(t *testing.T) {
 			tr := ran.NewTaskRunner(tc.task, tc.env, starter, recorder, stack, bytes.NewReader(nil), stdout, stderr, logger)
 			tr.Run(context.Background())
 			for {
-				cmd, ok := stack.Pop()
+				script, ok := stack.Pop()
 				if !ok {
 					break
 				}
-				require.NoError(t, cmd.Run())
+				require.NoError(t, script.Run())
 			}
 			var topics []string
 			for _, e := range recorder.Events {

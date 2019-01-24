@@ -1,34 +1,27 @@
 package ran
 
-type Cmd interface {
-	PID() string
-	Start() error
-	Wait() error
-	Run() error
-}
-
 type Stack interface {
-	Push(cmd Cmd)
-	Pop() (Cmd, bool)
+	Push(script Script)
+	Pop() (Script, bool)
 }
 
 type stack struct {
-	cmds []Cmd
+	scripts []Script
 }
 
 func NewStack() Stack {
 	return &stack{}
 }
 
-func (s *stack) Push(cmd Cmd) {
-	s.cmds = append(s.cmds, cmd)
+func (s *stack) Push(script Script) {
+	s.scripts = append(s.scripts, script)
 }
 
-func (s *stack) Pop() (Cmd, bool) {
-	if len(s.cmds) == 0 {
+func (s *stack) Pop() (Script, bool) {
+	if len(s.scripts) == 0 {
 		return nil, false
 	}
-	cmd := s.cmds[len(s.cmds)-1]
-	s.cmds = s.cmds[:len(s.cmds)-1]
-	return cmd, true
+	script := s.scripts[len(s.scripts)-1]
+	s.scripts = s.scripts[:len(s.scripts)-1]
+	return script, true
 }

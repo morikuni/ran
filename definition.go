@@ -21,11 +21,11 @@ type Command struct {
 }
 
 type Task struct {
-	Name  string
-	Cmd   string
-	When  []string
-	Env   map[string]string
-	Defer string
+	Name   string
+	Script string
+	When   []string
+	Env    map[string]string
+	Defer  string
 }
 
 type Env []string
@@ -50,11 +50,11 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 		Commands map[string]struct {
 			Description string `yaml:"description"`
 			Tasks       []struct {
-				Name  string            `yaml:"name"`
-				Cmd   string            `yaml:"cmd"`
-				When  []string          `yaml:"when"`
-				Env   map[string]string `yaml:"env"`
-				Defer string            `yaml:"defer"`
+				Name   string            `yaml:"name"`
+				Script string            `yaml:"script"`
+				When   []string          `yaml:"when"`
+				Env    map[string]string `yaml:"env"`
+				Defer  string            `yaml:"defer"`
 			} `yaml:"tasks"`
 		} `yaml:"commands"`
 	}
@@ -72,7 +72,7 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 		for i, t := range c.Tasks {
 			tasks[i] = Task{
 				t.Name,
-				t.Cmd,
+				t.Script,
 				t.When,
 				t.Env,
 				t.Defer,

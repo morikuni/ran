@@ -8,14 +8,14 @@ commands:
   test:
     description: Run test
     tasks:
-    - cmd: *test
+    - script: *test
 
   install:
     description: Install command into your $GOBIN dir.
     tasks:
     - name: test
-      cmd: *test
+      script: *test
 
-    - cmd: go install github.com/morikuni/ran/cmd/ran
+    - script: go install github.com/morikuni/ran/cmd/ran
       when:
       - test.succeeded
