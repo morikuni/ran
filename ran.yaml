@@ -10,71 +10,12 @@ commands:
     tasks:
     - cmd: *test
 
-  build:
-    description: Run test, then build
+  install:
+    description: Install command into your $GOBIN dir.
     tasks:
     - name: test
       cmd: *test
 
-    - name: build
-      cmd: go build -o bin/ran cmd/ran/main.go
+    - cmd: go install github.com/morikuni/ran/cmd/ran
       when:
       - test.succeeded
-
-  check:
-    description: Debugging ran command
-    tasks:
-    - name: echo
-      cmd: |
-        echo "cmd" \
-        "hoge"
-      defer: echo defer
-
-    - name: from_event
-      cmd: echo $EVENT_VALUE received
-      when:
-      - echo.succeeded
-      env:
-        EVENT_VALUE: "{{.echo.succeeded.stdout}}"
-
-  test2:
-    tasks:
-    - name: a
-      cmd: echo '{"result":"OK"}'
-    - name: c
-      cmd: |
-        [[ $(cat <(echo $VAL | jq .result -r)) == "OK" ]]
-      when:
-      - a.succeeded
-      env:
-        VAL: "{{.a.succeeded.stdout}}"
-
-  question:
-    description: Demo
-    tasks:
-    - name: ask_name
-      cmd: echo What is your name?
-
-    - name: read_name
-      cmd: read val; printf $val
-      when:
-      - ask_name.succeeded
-
-    - name: ask_age
-      cmd: echo How old are you?
-      when:
-      - read_name.succeeded
-
-    - name: read_age
-      cmd: read val; printf $val
-      when:
-      - ask_age.succeeded
-
-    - name: greet
-      cmd: echo "Hi, $NAME! You are $AGE years old!"
-      when:
-      - read_name.succeeded
-      - read_age.succeeded
-      env:
-        NAME: "{{.read_name.succeeded.stdout}}"
-        AGE: "{{.read_age.succeeded.stdout}}"
