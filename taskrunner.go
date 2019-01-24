@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 )
 
@@ -18,11 +19,13 @@ func (nopReceiver) Receive(_ context.Context, _ Event) {}
 var discardEvent nopReceiver
 
 type TaskRunner struct {
-	env              Env
-	task             Task
-	starter          WorkerStarter
-	receiver         EventReceiver
-	stack            Stack
+	env      Env
+	task     Task
+	starter  WorkerStarter
+	receiver EventReceiver
+	stack    Stack
+
+	mu               sync.Mutex
 	receivableTopics map[string]struct{}
 	head             map[string]Event
 
@@ -63,6 +66,7 @@ func NewTaskRunner(
 		starter,
 		receiver,
 		stack,
+		sync.Mutex{},
 		receivableTopics,
 		make(map[string]Event, len(receivableTopics)),
 		stdin,
@@ -138,6 +142,8 @@ func (tr *TaskRunner) Receive(ctx context.Context, e Event) {
 	if _, ok := tr.receivableTopics[e.Topic]; !ok {
 		return
 	}
+	tr.mu.Lock()
+	defer tr.mu.Unlock()
 	tr.head[e.Topic] = e
 	if len(tr.receivableTopics) == len(tr.head) {
 		events := tr.head
