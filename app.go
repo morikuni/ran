@@ -54,10 +54,6 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 
 	commandRunner := NewStdCommandRunner(
 		def.Commands,
-		def.Env,
-		os.Stdin,
-		os.Stdout,
-		os.Stderr,
 		logger,
 	)
 
@@ -67,7 +63,12 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 			Short: c.Description,
 			Long:  c.Description,
 			RunE: func(cmd *cobra.Command, args []string) error {
-				return commandRunner.RunCommand(ctx, cmd.Use)
+				return commandRunner.RunCommand(ctx, cmd.Use, RuntimeEnvironment{
+					os.Stdin,
+					os.Stdout,
+					os.Stderr,
+					def.Env,
+				})
 			},
 			SilenceErrors: true,
 			SilenceUsage:  true,

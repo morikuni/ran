@@ -16,8 +16,10 @@ func (nopReceiver) Receive(_ context.Context, _ Event) {}
 var discardEvent nopReceiver
 
 type TaskRunner struct {
-	env      Env
-	task     Task
+	task Task
+
+	env RuntimeEnvironment
+
 	starter  WorkerStarter
 	receiver EventReceiver
 	stack    Stack
@@ -26,28 +28,17 @@ type TaskRunner struct {
 	receivableTopics map[string]struct{}
 	head             map[string]Event
 
-	stdin  io.Reader
-	stdout io.Writer
-	stderr io.Writer
-
 	logger Logger
 }
 
 func NewTaskRunner(
 	task Task,
-	env Env,
 	starter WorkerStarter,
 	receiver EventReceiver,
 	stack Stack,
-	stdin io.Reader,
-	stdout io.Writer,
-	stderr io.Writer,
 	logger Logger,
+	env RuntimeEnvironment,
 ) *TaskRunner {
-	if env == nil {
-		env = Env{}
-	}
-
 	receivableTopics := make(map[string]struct{}, len(task.When))
 	for _, topic := range task.When {
 		receivableTopics[topic] = struct{}{}
@@ -58,17 +49,14 @@ func NewTaskRunner(
 	}
 
 	return &TaskRunner{
-		env,
 		task,
+		env,
 		starter,
 		receiver,
 		stack,
 		sync.Mutex{},
 		receivableTopics,
 		make(map[string]Event, len(receivableTopics)),
-		stdin,
-		stdout,
-		stderr,
 		logger,
 	}
 }
@@ -84,11 +72,16 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 		if err != nil {
 			return err
 		}
-		env := appendEnv(tr.env, fixedEnv)
+		env := appendEnv(tr.env.Env, fixedEnv)
 
 		stdin, stdout, stderr := tr.getIO()
 		if tr.task.Defer != "" {
-			deferScript := shScript(tr.task.Defer, stdin, stdout, stderr, env, tr.logger)
+			deferScript := shScript(tr.task.Defer, tr.logger, RuntimeEnvironment{
+				stdin,
+				stdout,
+				stderr,
+				env,
+			})
 			tr.stack.Push(deferScript)
 		}
 
@@ -98,7 +91,12 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 
 		bufOut := &bytes.Buffer{}
 		bufErr := &bytes.Buffer{}
-		script := shScript(tr.task.Script, tr.stdin, io.MultiWriter(bufOut, stdout), io.MultiWriter(bufErr, stderr), env, tr.logger)
+		script := shScript(tr.task.Script, tr.logger, RuntimeEnvironment{
+			stdin,
+			io.MultiWriter(bufOut, stdout),
+			io.MultiWriter(bufErr, stderr),
+			env,
+		})
 
 		if err := script.Start(); err != nil {
 			return err
@@ -150,7 +148,7 @@ func (tr *TaskRunner) Receive(ctx context.Context, e Event) {
 }
 
 func (tr *TaskRunner) getIO() (stdin io.Reader, stdout, stderr io.Writer) {
-	return tr.stdin, tr.stdout, tr.stderr
+	return tr.env.Stdin, tr.env.Stdout, tr.env.Stderr
 }
 
 func eventsToParams(es map[string]Event) map[string]interface{} {

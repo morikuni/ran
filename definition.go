@@ -10,7 +10,7 @@ import (
 )
 
 type Definition struct {
-	Env      Env
+	Env      EnvironmentVariables
 	Commands map[string]Command
 }
 
@@ -28,7 +28,7 @@ type Task struct {
 	Defer  string
 }
 
-type Env []string
+type EnvironmentVariables []string
 
 func LoadDefinition(filename string) (Definition, error) {
 	file, err := os.Open(filename)
@@ -55,6 +55,9 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 				When   []string          `yaml:"when"`
 				Env    map[string]string `yaml:"env"`
 				Defer  string            `yaml:"defer"`
+				Call   struct {
+					Command string `yaml:"command"`
+				} `yaml:"call"`
 			} `yaml:"tasks"`
 		} `yaml:"commands"`
 	}
@@ -88,7 +91,7 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 	return def, nil
 }
 
-func appendEnv(env Env, m map[string]string) Env {
+func appendEnv(env EnvironmentVariables, m map[string]string) EnvironmentVariables {
 	for k, v := range m {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}

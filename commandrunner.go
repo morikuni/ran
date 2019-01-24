@@ -3,7 +3,6 @@ package ran
 import (
 	"context"
 	"fmt"
-	"io"
 )
 
 type CommandRunner interface {
@@ -13,33 +12,20 @@ type CommandRunner interface {
 type StdCommandRunner struct {
 	commands map[string]Command
 
-	env    Env
-	stdin  io.Reader
-	stdout io.Writer
-	stderr io.Writer
-
 	logger Logger
 }
 
 func NewStdCommandRunner(
 	commands map[string]Command,
-	env Env,
-	stdin io.Reader,
-	stdout io.Writer,
-	stderr io.Writer,
 	logger Logger,
 ) StdCommandRunner {
 	return StdCommandRunner{
 		commands,
-		env,
-		stdin,
-		stdout,
-		stderr,
 		logger,
 	}
 }
 
-func (cr StdCommandRunner) RunCommand(ctx context.Context, command string) error {
+func (cr StdCommandRunner) RunCommand(ctx context.Context, command string, env RuntimeEnvironment) error {
 	cmd, ok := cr.commands[command]
 	if !ok {
 		return fmt.Errorf("no such command: %s", command)
@@ -53,14 +39,11 @@ func (cr StdCommandRunner) RunCommand(ctx context.Context, command string) error
 	for _, task := range cmd.Tasks {
 		tr := NewTaskRunner(
 			task,
-			cr.env,
 			supervisor,
 			dispatcher,
 			stack,
-			cr.stdin,
-			cr.stdout,
-			cr.stderr,
 			cr.logger,
+			env,
 		)
 		if len(task.When) == 0 {
 			initialRunners = append(initialRunners, tr)

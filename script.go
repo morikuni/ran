@@ -15,12 +15,12 @@ type Script interface {
 	Run() error
 }
 
-func shScript(script string, stdin io.Reader, stdout, stderr io.Writer, env []string, logger Logger) Script {
+func shScript(script string, logger Logger, env RuntimeEnvironment) Script {
 	c := exec.Command("sh", "-c", script)
-	c.Stdout = stdout
-	c.Stderr = stderr
-	c.Stdin = stdin
-	c.Env = env
+	c.Stdin = env.Stdin
+	c.Stdout = env.Stdout
+	c.Stderr = env.Stderr
+	c.Env = env.Env
 	return loggingScript{script, c, logger}
 }
 
@@ -59,4 +59,11 @@ func (s loggingScript) Run() error {
 		return fmt.Errorf("%q: %s", s.script, err.Error())
 	}
 	return nil
+}
+
+type RuntimeEnvironment struct {
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
+	Env    EnvironmentVariables
 }

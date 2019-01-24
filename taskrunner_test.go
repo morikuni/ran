@@ -15,7 +15,7 @@ import (
 func TestTaskRunner(t *testing.T) {
 	cases := map[string]struct {
 		task ran.Task
-		env  ran.Env
+		env  ran.EnvironmentVariables
 
 		wantTopics []string
 		wantStdout string
@@ -76,7 +76,12 @@ func TestTaskRunner(t *testing.T) {
 			stack := ran.NewStack()
 			stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 			logger := ran.NewStdLogger(ioutil.Discard, ran.Discard)
-			tr := ran.NewTaskRunner(tc.task, tc.env, starter, recorder, stack, bytes.NewReader(nil), stdout, stderr, logger)
+			tr := ran.NewTaskRunner(tc.task, starter, recorder, stack, logger, ran.RuntimeEnvironment{
+				Stdin:  bytes.NewReader(nil),
+				Stdout: stdout,
+				Stderr: stderr,
+				Env:    tc.env,
+			})
 			tr.Run(context.Background())
 			for {
 				script, ok := stack.Pop()
