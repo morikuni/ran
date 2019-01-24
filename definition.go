@@ -35,6 +35,7 @@ func LoadDefinition(filename string) (Definition, error) {
 	if err != nil {
 		return Definition{}, err
 	}
+	defer file.Close()
 	return ParseDefinition(file)
 }
 
