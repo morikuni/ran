@@ -12,6 +12,9 @@ type WorkerStarter interface {
 type Supervisor struct {
 	wg     sync.WaitGroup
 	logger Logger
+
+	mu      sync.Mutex
+	lastErr error
 }
 
 var _ interface {
@@ -30,12 +33,17 @@ func (s *Supervisor) Start(ctx context.Context, f func(ctx context.Context) erro
 		defer s.wg.Done()
 		err := f(ctx)
 		if err != nil {
-			s.logger.Error(err.Error())
+			s.mu.Lock()
+			defer s.mu.Unlock()
+			if s.lastErr != nil {
+				s.logger.Error(s.lastErr.Error())
+			}
+			s.lastErr = err
 		}
 	}()
 }
 
 func (s *Supervisor) Wait() error {
 	s.wg.Wait()
-	return nil
+	return s.lastErr
 }
