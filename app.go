@@ -23,6 +23,7 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return errors.New("require command")
 		},
+		SilenceErrors: true,
 	}
 	cmd.SetArgs(args[1:])
 
@@ -68,10 +69,11 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 			RunE: func(cmd *cobra.Command, args []string) error {
 				return commandRunner.RunCommand(ctx, cmd.Use)
 			},
+			SilenceErrors: true,
+			SilenceUsage:  true,
 		})
 	}
 
-	cmd.SilenceErrors = true
 	if err := cmd.Execute(); err != nil {
 		logger.Error("%s", err.Error())
 		return 1
