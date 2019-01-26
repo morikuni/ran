@@ -28,7 +28,7 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 	cmd.SetArgs(args[1:])
 
 	file := cmd.PersistentFlags().StringP("file", "f", "ran.yaml", "ran definition file.")
-	logLevel := cmd.PersistentFlags().String("log-level", "error", "log level. (debug, info, error, discard)")
+	logLevel := cmd.PersistentFlags().String("log-level", "info", "log level. (debug, info, error, discard)")
 
 	// parse --file flag before execute to parse and append commands.
 	if err := cmd.PersistentFlags().Parse(args); err != nil && err != pflag.ErrHelp {
