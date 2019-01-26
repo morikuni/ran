@@ -29,11 +29,9 @@ func (s *Supervisor) Start(ctx context.Context, f func(ctx context.Context) erro
 	go func() {
 		defer s.wg.Done()
 		err := f(ctx)
-		if err != nil {
-			s.mu.Lock()
-			defer s.mu.Unlock()
-			s.lastErr = err
-		}
+		s.mu.Lock()
+		s.lastErr = err
+		s.mu.Unlock()
 	}()
 }
 
