@@ -1,0 +1,20 @@
+defaults: &defaults
+  docker:
+    - image: circleci/golang:1.11
+  working_directory: /go/src/github.com/morikuni/ran
+
+version: 2
+jobs:
+  build:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: build
+          command: GO111MODULE=on go build -o ./bin/ran ./cmd/ran/main.go
+      - run:
+          name: coverage
+          command: ./bin/ran coverage
+      - run:
+          name: upload coverage
+          command: bash <(curl -s https://codecov.io/bash)

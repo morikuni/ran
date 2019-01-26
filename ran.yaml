@@ -5,7 +5,7 @@ commands:
   test:
     description: Run test
     tasks:
-    - script: go test -v ./...
+    - script: go test -v -race ./...
 
   install:
     description: Install command into your $GOBIN dir.
@@ -17,3 +17,19 @@ commands:
     - script: go install github.com/morikuni/ran/cmd/ran
       when:
       - test.succeeded
+
+  coverage:
+    description: Generate test coverage profile into coverage.txt
+    tasks:
+    - script: go test -coverpkg=. -covermode=atomic -coverprofile=coverage.txt ./...
+
+  view-coverage:
+    description: View test coverage on browser
+    tasks:
+    - name: coverage
+      call:
+        command: coverage
+
+    - script: go tool cover -html coverage.txt
+      when:
+      - coverage.succeeded
