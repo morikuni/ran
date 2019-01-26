@@ -16,7 +16,7 @@ type Script interface {
 }
 
 func shScript(script string, logger Logger, env RuntimeEnvironment) Script {
-	c := exec.Command("sh", "-c", script)
+	c := exec.Command("bash", "-c", script)
 	c.Stdin = env.Stdin
 	c.Stdout = env.Stdout
 	c.Stderr = env.Stderr
