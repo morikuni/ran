@@ -1,12 +1,11 @@
 package ran
 
 import (
-	"context"
 	"sync"
 )
 
 type WorkerStarter interface {
-	Start(ctx context.Context, f func(ctx context.Context) error)
+	Start(f func() error)
 }
 
 type Supervisor struct {
@@ -24,11 +23,11 @@ func NewSupervisor() *Supervisor {
 	return &Supervisor{}
 }
 
-func (s *Supervisor) Start(ctx context.Context, f func(ctx context.Context) error) {
+func (s *Supervisor) Start(f func() error) {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		err := f(ctx)
+		err := f()
 		s.mu.Lock()
 		s.lastErr = err
 		s.mu.Unlock()

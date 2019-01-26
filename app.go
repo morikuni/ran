@@ -1,9 +1,9 @@
 package ran
 
 import (
-	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -17,7 +17,7 @@ func NewApp() App {
 	return App{}
 }
 
-func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) int {
+func (app App) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	cmd := &cobra.Command{
 		Use: "ran",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -63,7 +63,7 @@ func (app App) Run(ctx context.Context, args []string, signal <-chan os.Signal) 
 			Short: c.Description,
 			Long:  c.Description,
 			RunE: func(cmd *cobra.Command, args []string) error {
-				return commandRunner.RunCommand(ctx, cmd.Use, RuntimeEnvironment{
+				return commandRunner.RunCommand(cmd.Use, RuntimeEnvironment{
 					os.Stdin,
 					os.Stdout,
 					os.Stderr,

@@ -2,7 +2,6 @@ package ran_test
 
 import (
 	"bytes"
-	"context"
 	"io/ioutil"
 	"testing"
 
@@ -102,7 +101,7 @@ func TestTaskRunner(t *testing.T) {
 				Stderr: stderr,
 				Env:    tc.env,
 			})
-			tr.Run(context.Background())
+			tr.Run()
 			for {
 				script, ok := stack.Pop()
 				if !ok {

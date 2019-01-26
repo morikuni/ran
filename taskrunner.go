@@ -2,7 +2,6 @@ package ran
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -12,7 +11,7 @@ import (
 
 type nopReceiver struct{}
 
-func (nopReceiver) Receive(_ context.Context, _ Event) {}
+func (nopReceiver) Receive(_ Event) {}
 
 var discardEvent nopReceiver
 
@@ -65,13 +64,13 @@ func NewTaskRunner(
 	}
 }
 
-func (tr *TaskRunner) Run(ctx context.Context) {
-	tr.run(ctx, nil)
+func (tr *TaskRunner) Run() {
+	tr.run(nil)
 }
 
-func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
+func (tr *TaskRunner) run(events map[string]Event) {
 	params := eventsToParams(events)
-	tr.starter.Start(ctx, func(ctx context.Context) error {
+	tr.starter.Start(func() error {
 		fixedEnv, err := evaluateEnv(tr.task.Env, params)
 		if err != nil {
 			return err
@@ -85,22 +84,22 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 			stderr,
 			env,
 		}
-		tr.handleDefer(ctx, renv)
-		if err := tr.handleScript(ctx, renv); err != nil {
+		tr.handleDefer(renv)
+		if err := tr.handleScript(renv); err != nil {
 			return err
 		}
-		return tr.handleCall(ctx, renv)
+		return tr.handleCall(renv)
 	})
 }
 
-func (tr *TaskRunner) handleDefer(ctx context.Context, renv RuntimeEnvironment) {
+func (tr *TaskRunner) handleDefer(renv RuntimeEnvironment) {
 	if tr.task.Defer == "" {
 		return
 	}
 	tr.stack.Push(shScript(tr.task.Defer, tr.logger, renv))
 }
 
-func (tr *TaskRunner) handleScript(ctx context.Context, renv RuntimeEnvironment) error {
+func (tr *TaskRunner) handleScript(renv RuntimeEnvironment) error {
 	if tr.task.Script == "" {
 		return nil
 	}
@@ -118,25 +117,25 @@ func (tr *TaskRunner) handleScript(ctx context.Context, renv RuntimeEnvironment)
 		return err
 	}
 	pid := script.PID()
-	tr.receiver.Receive(ctx, tr.newEvent("started", map[string]string{
+	tr.receiver.Receive(tr.newEvent("started", map[string]string{
 		"pid": pid,
 	}))
 
 	err := script.Wait()
-	tr.receiver.Receive(ctx, tr.newEvent("finished", map[string]string{
+	tr.receiver.Receive(tr.newEvent("finished", map[string]string{
 		"pid":    pid,
 		"stdout": bufOut.String(),
 		"stderr": bufErr.String(),
 	}))
 	if err != nil {
-		tr.receiver.Receive(ctx, tr.newEvent("failed", map[string]string{
+		tr.receiver.Receive(tr.newEvent("failed", map[string]string{
 			"pid":    pid,
 			"stdout": bufOut.String(),
 			"stderr": bufErr.String(),
 		}))
 		return err
 	}
-	tr.receiver.Receive(ctx, tr.newEvent("succeeded", map[string]string{
+	tr.receiver.Receive(tr.newEvent("succeeded", map[string]string{
 		"pid":    pid,
 		"stdout": bufOut.String(),
 		"stderr": bufErr.String(),
@@ -144,7 +143,7 @@ func (tr *TaskRunner) handleScript(ctx context.Context, renv RuntimeEnvironment)
 	return nil
 }
 
-func (tr *TaskRunner) handleCall(ctx context.Context, renv RuntimeEnvironment) error {
+func (tr *TaskRunner) handleCall(renv RuntimeEnvironment) error {
 	if tr.task.Call.Command == "" {
 		return nil
 	}
@@ -158,21 +157,21 @@ func (tr *TaskRunner) handleCall(ctx context.Context, renv RuntimeEnvironment) e
 	renv.Stderr = io.MultiWriter(bufErr, renv.Stderr)
 
 	// publish started, but actually not started.
-	tr.receiver.Receive(ctx, tr.newEvent("started", nil))
+	tr.receiver.Receive(tr.newEvent("started", nil))
 
-	err := tr.commandRunner.RunCommand(ctx, tr.task.Call.Command, renv)
-	tr.receiver.Receive(ctx, tr.newEvent("finished", map[string]string{
+	err := tr.commandRunner.RunCommand(tr.task.Call.Command, renv)
+	tr.receiver.Receive(tr.newEvent("finished", map[string]string{
 		"stdout": bufOut.String(),
 		"stderr": bufErr.String(),
 	}))
 	if err != nil {
-		tr.receiver.Receive(ctx, tr.newEvent("failed", map[string]string{
+		tr.receiver.Receive(tr.newEvent("failed", map[string]string{
 			"stdout": bufOut.String(),
 			"stderr": bufErr.String(),
 		}))
 		return err
 	}
-	tr.receiver.Receive(ctx, tr.newEvent("succeeded", map[string]string{
+	tr.receiver.Receive(tr.newEvent("succeeded", map[string]string{
 		"stdout": bufOut.String(),
 		"stderr": bufErr.String(),
 	}))
@@ -183,7 +182,7 @@ func (tr *TaskRunner) newEvent(event string, payload map[string]string) Event {
 	return NewEvent(strings.Join([]string{tr.task.Name, event}, "."), payload)
 }
 
-func (tr *TaskRunner) Receive(ctx context.Context, e Event) {
+func (tr *TaskRunner) Receive(e Event) {
 	if _, ok := tr.receivableTopics[e.Topic]; !ok {
 		return
 	}
@@ -193,7 +192,7 @@ func (tr *TaskRunner) Receive(ctx context.Context, e Event) {
 	if len(tr.receivableTopics) == len(tr.head) {
 		events := tr.head
 		tr.head = make(map[string]Event, len(tr.receivableTopics))
-		tr.run(ctx, events)
+		tr.run(events)
 	}
 }
 

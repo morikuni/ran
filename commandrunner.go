@@ -1,12 +1,11 @@
 package ran
 
 import (
-	"context"
 	"fmt"
 )
 
 type CommandRunner interface {
-	RunCommand(ctx context.Context, command string, renv RuntimeEnvironment) error
+	RunCommand(command string, renv RuntimeEnvironment) error
 }
 
 type StdCommandRunner struct {
@@ -25,7 +24,7 @@ func NewStdCommandRunner(
 	}
 }
 
-func (cr StdCommandRunner) RunCommand(ctx context.Context, command string, renv RuntimeEnvironment) error {
+func (cr StdCommandRunner) RunCommand(command string, renv RuntimeEnvironment) error {
 	cmd, ok := cr.commands[command]
 	if !ok {
 		return fmt.Errorf("no such command: %s", command)
@@ -49,12 +48,12 @@ func (cr StdCommandRunner) RunCommand(ctx context.Context, command string, renv 
 		if len(task.When) == 0 {
 			initialRunners = append(initialRunners, tr)
 		} else {
-			dispatcher.Register(ctx, tr)
+			dispatcher.Register(tr)
 		}
 	}
 
 	for _, tr := range initialRunners {
-		tr.Run(ctx)
+		tr.Run()
 	}
 
 	resultErr := supervisor.Wait()
