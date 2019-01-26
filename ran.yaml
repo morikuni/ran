@@ -1,20 +1,18 @@
 env:
   GO111MODULE: on
 
-vars:
-  test: &test go test -v ./...
-
 commands:
   test:
     description: Run test
     tasks:
-    - script: *test
+    - script: go test -v ./...
 
   install:
     description: Install command into your $GOBIN dir.
     tasks:
     - name: test
-      script: *test
+      call:
+        command: test
 
     - script: go install github.com/morikuni/ran/cmd/ran
       when:

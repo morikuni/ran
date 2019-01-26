@@ -29,3 +29,16 @@ func NewSynchronousStarter() SynchronousStarter {
 func (s SynchronousStarter) Start(ctx context.Context, f func(ctx context.Context) error) {
 	s.Error = f(ctx)
 }
+
+type CommandRecorder struct {
+	Commands []string
+}
+
+func NewCommandRecorder() *CommandRecorder {
+	return &CommandRecorder{}
+}
+
+func (r *CommandRecorder) RunCommand(ctx context.Context, command string, renv ran.RuntimeEnvironment) error {
+	r.Commands = append(r.Commands, command)
+	return nil
+}

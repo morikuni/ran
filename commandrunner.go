@@ -6,7 +6,7 @@ import (
 )
 
 type CommandRunner interface {
-	RunCommand(ctx context.Context, command string) error
+	RunCommand(ctx context.Context, command string, renv RuntimeEnvironment) error
 }
 
 type StdCommandRunner struct {
@@ -25,7 +25,7 @@ func NewStdCommandRunner(
 	}
 }
 
-func (cr StdCommandRunner) RunCommand(ctx context.Context, command string, env RuntimeEnvironment) error {
+func (cr StdCommandRunner) RunCommand(ctx context.Context, command string, renv RuntimeEnvironment) error {
 	cmd, ok := cr.commands[command]
 	if !ok {
 		return fmt.Errorf("no such command: %s", command)
@@ -39,11 +39,12 @@ func (cr StdCommandRunner) RunCommand(ctx context.Context, command string, env R
 	for _, task := range cmd.Tasks {
 		tr := NewTaskRunner(
 			task,
+			cr,
 			supervisor,
 			dispatcher,
 			stack,
 			cr.logger,
-			env,
+			renv,
 		)
 		if len(task.When) == 0 {
 			initialRunners = append(initialRunners, tr)

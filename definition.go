@@ -26,6 +26,11 @@ type Task struct {
 	When   []string
 	Env    map[string]string
 	Defer  string
+	Call   CommandCall
+}
+
+type CommandCall struct {
+	Command string
 }
 
 type EnvironmentVariables []string
@@ -79,6 +84,9 @@ func ParseDefinition(r io.Reader) (Definition, error) {
 				t.When,
 				t.Env,
 				t.Defer,
+				CommandCall{
+					t.Call.Command,
+				},
 			}
 		}
 		def.Commands[name] = Command{

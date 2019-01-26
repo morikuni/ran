@@ -20,6 +20,7 @@ func TestTaskRunner(t *testing.T) {
 		wantTopics []string
 		wantStdout string
 		wantStderr string
+		wantCalls  []string
 	}{
 		"success": {
 			ran.Task{
@@ -34,6 +35,7 @@ func TestTaskRunner(t *testing.T) {
 			[]string{"success.started", "success.finished", "success.succeeded"},
 			"hello world\n",
 			"",
+			nil,
 		},
 		"error": {
 			ran.Task{
@@ -45,6 +47,7 @@ func TestTaskRunner(t *testing.T) {
 			[]string{"error.started", "error.finished", "error.failed"},
 			"",
 			"cat: nofile: No such file or directory\n",
+			nil,
 		},
 		"defer": {
 			ran.Task{
@@ -56,6 +59,7 @@ func TestTaskRunner(t *testing.T) {
 			nil,
 			"defer\n",
 			"",
+			nil,
 		},
 		"no events": {
 			ran.Task{
@@ -66,6 +70,21 @@ func TestTaskRunner(t *testing.T) {
 			nil,
 			"no name\n",
 			"",
+			nil,
+		},
+		"call": {
+			ran.Task{
+				Name: "call",
+				Call: ran.CommandCall{
+					Command: "call",
+				},
+			},
+			nil,
+
+			[]string{"call.started", "call.finished", "call.succeeded"},
+			"",
+			"",
+			[]string{"call"},
 		},
 	}
 
@@ -76,7 +95,8 @@ func TestTaskRunner(t *testing.T) {
 			stack := ran.NewStack()
 			stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 			logger := ran.NewStdLogger(ioutil.Discard, ran.Discard)
-			tr := ran.NewTaskRunner(tc.task, starter, recorder, stack, logger, ran.RuntimeEnvironment{
+			commandRunner := NewCommandRecorder()
+			tr := ran.NewTaskRunner(tc.task, commandRunner, starter, recorder, stack, logger, ran.RuntimeEnvironment{
 				Stdin:  bytes.NewReader(nil),
 				Stdout: stdout,
 				Stderr: stderr,
@@ -99,6 +119,7 @@ func TestTaskRunner(t *testing.T) {
 			assert.Equal(t, tc.wantTopics, topics)
 			assert.Equal(t, tc.wantStdout, stdout.String())
 			assert.Equal(t, tc.wantStderr, stderr.String())
+			assert.Equal(t, tc.wantCalls, commandRunner.Commands)
 		})
 	}
 }

@@ -3,6 +3,7 @@ package ran
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -16,7 +17,8 @@ func (nopReceiver) Receive(_ context.Context, _ Event) {}
 var discardEvent nopReceiver
 
 type TaskRunner struct {
-	task Task
+	task          Task
+	commandRunner CommandRunner
 
 	env RuntimeEnvironment
 
@@ -33,6 +35,7 @@ type TaskRunner struct {
 
 func NewTaskRunner(
 	task Task,
+	commandRunner CommandRunner,
 	starter WorkerStarter,
 	receiver EventReceiver,
 	stack Stack,
@@ -50,6 +53,7 @@ func NewTaskRunner(
 
 	return &TaskRunner{
 		task,
+		commandRunner,
 		env,
 		starter,
 		receiver,
@@ -75,58 +79,104 @@ func (tr *TaskRunner) run(ctx context.Context, events map[string]Event) {
 		env := appendEnv(tr.env.Env, fixedEnv)
 
 		stdin, stdout, stderr := tr.getIO()
-		if tr.task.Defer != "" {
-			deferScript := shScript(tr.task.Defer, tr.logger, RuntimeEnvironment{
-				stdin,
-				stdout,
-				stderr,
-				env,
-			})
-			tr.stack.Push(deferScript)
-		}
-
-		if tr.task.Script == "" {
-			return nil
-		}
-
-		bufOut := &bytes.Buffer{}
-		bufErr := &bytes.Buffer{}
-		script := shScript(tr.task.Script, tr.logger, RuntimeEnvironment{
+		renv := RuntimeEnvironment{
 			stdin,
-			io.MultiWriter(bufOut, stdout),
-			io.MultiWriter(bufErr, stderr),
+			stdout,
+			stderr,
 			env,
-		})
-
-		if err := script.Start(); err != nil {
+		}
+		tr.handleDefer(ctx, renv)
+		if err := tr.handleScript(ctx, renv); err != nil {
 			return err
 		}
-		pid := script.PID()
-		tr.receiver.Receive(ctx, tr.newEvent("started", map[string]string{
-			"pid": pid,
-		}))
-
-		err = script.Wait()
-		tr.receiver.Receive(ctx, tr.newEvent("finished", map[string]string{
-			"pid":    pid,
-			"stdout": bufOut.String(),
-			"stderr": bufErr.String(),
-		}))
-		if err != nil {
-			tr.receiver.Receive(ctx, tr.newEvent("failed", map[string]string{
-				"pid":    pid,
-				"stdout": bufOut.String(),
-				"stderr": bufErr.String(),
-			}))
-			return err
-		}
-		tr.receiver.Receive(ctx, tr.newEvent("succeeded", map[string]string{
-			"pid":    pid,
-			"stdout": bufOut.String(),
-			"stderr": bufErr.String(),
-		}))
-		return nil
+		return tr.handleCall(ctx, renv)
 	})
+}
+
+func (tr *TaskRunner) handleDefer(ctx context.Context, renv RuntimeEnvironment) {
+	if tr.task.Defer == "" {
+		return
+	}
+	tr.stack.Push(shScript(tr.task.Defer, tr.logger, renv))
+}
+
+func (tr *TaskRunner) handleScript(ctx context.Context, renv RuntimeEnvironment) error {
+	if tr.task.Script == "" {
+		return nil
+	}
+	if tr.task.Call.Command != "" {
+		return fmt.Errorf("%s: cannot use both of script and call", tr.task.Script)
+	}
+
+	bufOut := &bytes.Buffer{}
+	bufErr := &bytes.Buffer{}
+	renv.Stdout = io.MultiWriter(bufOut, renv.Stdout)
+	renv.Stderr = io.MultiWriter(bufErr, renv.Stderr)
+	script := shScript(tr.task.Script, tr.logger, renv)
+
+	if err := script.Start(); err != nil {
+		return err
+	}
+	pid := script.PID()
+	tr.receiver.Receive(ctx, tr.newEvent("started", map[string]string{
+		"pid": pid,
+	}))
+
+	err := script.Wait()
+	tr.receiver.Receive(ctx, tr.newEvent("finished", map[string]string{
+		"pid":    pid,
+		"stdout": bufOut.String(),
+		"stderr": bufErr.String(),
+	}))
+	if err != nil {
+		tr.receiver.Receive(ctx, tr.newEvent("failed", map[string]string{
+			"pid":    pid,
+			"stdout": bufOut.String(),
+			"stderr": bufErr.String(),
+		}))
+		return err
+	}
+	tr.receiver.Receive(ctx, tr.newEvent("succeeded", map[string]string{
+		"pid":    pid,
+		"stdout": bufOut.String(),
+		"stderr": bufErr.String(),
+	}))
+	return nil
+}
+
+func (tr *TaskRunner) handleCall(ctx context.Context, renv RuntimeEnvironment) error {
+	if tr.task.Call.Command == "" {
+		return nil
+	}
+	if tr.task.Script != "" {
+		return fmt.Errorf("%s: cannot use both of script and call", tr.task.Call.Command)
+	}
+
+	bufOut := &bytes.Buffer{}
+	bufErr := &bytes.Buffer{}
+	renv.Stdout = io.MultiWriter(bufOut, renv.Stdout)
+	renv.Stderr = io.MultiWriter(bufErr, renv.Stderr)
+
+	// publish started, but actually not started.
+	tr.receiver.Receive(ctx, tr.newEvent("started", nil))
+
+	err := tr.commandRunner.RunCommand(ctx, tr.task.Call.Command, renv)
+	tr.receiver.Receive(ctx, tr.newEvent("finished", map[string]string{
+		"stdout": bufOut.String(),
+		"stderr": bufErr.String(),
+	}))
+	if err != nil {
+		tr.receiver.Receive(ctx, tr.newEvent("failed", map[string]string{
+			"stdout": bufOut.String(),
+			"stderr": bufErr.String(),
+		}))
+		return err
+	}
+	tr.receiver.Receive(ctx, tr.newEvent("succeeded", map[string]string{
+		"stdout": bufOut.String(),
+		"stderr": bufErr.String(),
+	}))
+	return nil
 }
 
 func (tr *TaskRunner) newEvent(event string, payload map[string]string) Event {
