@@ -57,18 +57,19 @@ func (cr StdCommandRunner) RunCommand(ctx context.Context, command string, renv 
 		tr.Run(ctx)
 	}
 
-	if err := supervisor.Wait(); err != nil {
-		return err
-	}
-
+	resultErr := supervisor.Wait()
 	for {
 		cmd, ok := stack.Pop()
 		if !ok {
 			break
 		}
 		if err := cmd.Run(); err != nil {
-			return err
+			if resultErr == nil {
+				resultErr = err
+			} else {
+				cr.logger.Error(err.Error())
+			}
 		}
 	}
-	return nil
+	return resultErr
 }
