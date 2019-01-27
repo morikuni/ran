@@ -57,7 +57,6 @@ func (app App) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 		rootCmd.AddCommand(&cobra.Command{
 			Use:   c.Name,
 			Short: c.Description,
-			Long:  c.Description,
 			RunE: func(cmd *cobra.Command, args []string) error {
 				return commandRunner.RunCommand(cmd.Use, RuntimeEnvironment{
 					os.Stdin,
