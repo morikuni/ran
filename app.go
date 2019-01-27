@@ -1,7 +1,6 @@
 package ran
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -19,10 +18,7 @@ func NewApp() App {
 
 func (app App) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	rootCmd := &cobra.Command{
-		Use: "ran",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return errors.New("command is required")
-		},
+		Use:           "ran",
 		SilenceErrors: true,
 	}
 	rootCmd.SetArgs(args[1:])
