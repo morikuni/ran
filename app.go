@@ -21,7 +21,7 @@ func (app App) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 	cmd := &cobra.Command{
 		Use: "ran",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return errors.New("require command")
+			return errors.New("command is required")
 		},
 		SilenceErrors: true,
 	}
