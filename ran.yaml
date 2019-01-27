@@ -33,3 +33,8 @@ commands:
     - script: go tool cover -html coverage.txt
       when:
       - coverage.succeeded
+
+  mod:
+    description: Update dependent modules
+    tasks:
+    - script: go mod tidy
