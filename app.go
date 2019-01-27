@@ -18,28 +18,28 @@ func NewApp() App {
 }
 
 func (app App) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	cmd := &cobra.Command{
+	rootCmd := &cobra.Command{
 		Use: "ran",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return errors.New("command is required")
 		},
 		SilenceErrors: true,
 	}
-	cmd.SetArgs(args[1:])
+	rootCmd.SetArgs(args[1:])
 
-	file := cmd.PersistentFlags().StringP("file", "f", "ran.yaml", "ran definition file.")
-	logLevel := cmd.PersistentFlags().String("log-level", "info", "log level. (debug, info, error, discard)")
+	file := rootCmd.PersistentFlags().StringP("file", "f", "ran.yaml", "ran definition file.")
+	logLevel := rootCmd.PersistentFlags().String("log-level", "info", "log level. (debug, info, error, discard)")
 
 	// parse --file flag before execute to parse and append commands.
-	if err := cmd.PersistentFlags().Parse(args); err != nil && err != pflag.ErrHelp {
-		cmd.Usage()
+	if err := rootCmd.PersistentFlags().Parse(args); err != nil && err != pflag.ErrHelp {
+		rootCmd.Usage()
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 
 	level, err := NewLogLevel(*logLevel)
 	if err != nil {
-		cmd.Usage()
+		rootCmd.Usage()
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
@@ -47,7 +47,7 @@ func (app App) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 
 	def, err := LoadDefinition(*file)
 	if err != nil {
-		cmd.Usage()
+		rootCmd.Usage()
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
@@ -58,7 +58,7 @@ func (app App) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 	)
 
 	for _, c := range def.Commands {
-		cmd.AddCommand(&cobra.Command{
+		rootCmd.AddCommand(&cobra.Command{
 			Use:   c.Name,
 			Short: c.Description,
 			Long:  c.Description,
@@ -75,7 +75,7 @@ func (app App) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 		})
 	}
 
-	if err := cmd.Execute(); err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		logger.Error("%s", err.Error())
 		return 1
 	}
