@@ -96,7 +96,7 @@ func (tr *TaskRunner) handleDefer(renv RuntimeEnvironment) {
 	if tr.task.Defer == "" {
 		return
 	}
-	tr.stack.Push(shScript(tr.task.Defer, tr.logger, renv))
+	tr.stack.Push(bashScript(tr.task.Defer, tr.logger, renv))
 }
 
 func (tr *TaskRunner) handleScript(renv RuntimeEnvironment) error {
@@ -111,7 +111,7 @@ func (tr *TaskRunner) handleScript(renv RuntimeEnvironment) error {
 	bufErr := &bytes.Buffer{}
 	renv.Stdout = io.MultiWriter(bufOut, renv.Stdout)
 	renv.Stderr = io.MultiWriter(bufErr, renv.Stderr)
-	script := shScript(tr.task.Script, tr.logger, renv)
+	script := bashScript(tr.task.Script, tr.logger, renv)
 
 	if err := script.Start(); err != nil {
 		return err

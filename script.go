@@ -15,7 +15,7 @@ type Script interface {
 	Run() error
 }
 
-func shScript(script string, logger Logger, env RuntimeEnvironment) Script {
+func bashScript(script string, logger Logger, env RuntimeEnvironment) Script {
 	c := exec.Command("bash", "-c", script)
 	c.Stdin = env.Stdin
 	c.Stdout = env.Stdout
