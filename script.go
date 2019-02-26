@@ -21,6 +21,7 @@ func bashScript(script string, logger Logger, env RuntimeEnvironment) Script {
 	c.Stdout = env.Stdout
 	c.Stderr = env.Stderr
 	c.Env = env.Env
+	c.Dir = env.WorkingDirectory
 	return loggingScript{script, c, logger}
 }
 
@@ -62,8 +63,9 @@ func (s loggingScript) Run() error {
 }
 
 type RuntimeEnvironment struct {
-	Stdin  io.Reader
-	Stdout io.Writer
-	Stderr io.Writer
-	Env    EnvironmentVariables
+	Stdin            io.Reader
+	Stdout           io.Writer
+	Stderr           io.Writer
+	Env              EnvironmentVariables
+	WorkingDirectory string
 }

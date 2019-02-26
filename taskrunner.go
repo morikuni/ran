@@ -83,6 +83,7 @@ func (tr *TaskRunner) run(events map[string]Event) {
 			stdout,
 			stderr,
 			env,
+			tr.env.WorkingDirectory,
 		}
 		tr.handleDefer(renv)
 		if err := tr.handleScript(renv); err != nil {

@@ -10,16 +10,19 @@ type CommandRunner interface {
 
 type StdCommandRunner struct {
 	commands map[string]Command
+	workDir  string
 
 	logger Logger
 }
 
 func NewStdCommandRunner(
 	commands map[string]Command,
+	workDir string,
 	logger Logger,
 ) StdCommandRunner {
 	return StdCommandRunner{
 		commands,
+		workDir,
 		logger,
 	}
 }
@@ -29,6 +32,8 @@ func (cr StdCommandRunner) RunCommand(command string, renv RuntimeEnvironment) e
 	if !ok {
 		return fmt.Errorf("no such command: %s", command)
 	}
+
+	renv.WorkingDirectory = cr.workDir
 
 	supervisor := NewSupervisor()
 	dispatcher := NewDispatcher(cr.logger)

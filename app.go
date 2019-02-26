@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -48,8 +49,16 @@ func (app App) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 		return 1
 	}
 
+	abs, err := filepath.Abs(*file)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	workingDir := filepath.Dir(abs)
+
 	commandRunner := NewStdCommandRunner(
 		def.Commands,
+		workingDir,
 		logger,
 	)
 
@@ -63,6 +72,7 @@ func (app App) Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 					os.Stdout,
 					os.Stderr,
 					def.Env,
+					"",
 				})
 			},
 			SilenceErrors: true,
