@@ -133,7 +133,7 @@ ok      github.com/morikuni/ran (cached)
 > go install github.com/morikuni/ran/cmd/ran
 ```
 
-`go install` script is executed after `go test` command.
+`go install` script is executed after `go test` script.
 
 ## Event
 
